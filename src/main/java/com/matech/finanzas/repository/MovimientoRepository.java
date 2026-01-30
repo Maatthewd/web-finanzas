@@ -1,8 +1,10 @@
 package com.matech.finanzas.repository;
 
 import com.matech.finanzas.entity.Movimiento;
-import com.matech.finanzas.projection.ResumenCategoria;
 import com.matech.finanzas.entity.TipoMovimiento;
+import com.matech.finanzas.projection.ResumenCategoria;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,44 +16,48 @@ import java.util.List;
 
 public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
 
-    List<Movimiento> findByUsuarioId(Long id);
+    Page<Movimiento> findByUsuarioId(Long usuarioId, Pageable pageable);
 
     List<Movimiento> findByUsuarioIdAndFechaBetween(Long id, LocalDate inicio, LocalDate fin);
 
-    // Resumenes
+    // Resumenes por usuario
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
                 FROM Movimiento m
                 WHERE m.tipo = 'INGRESO'
                 AND m.pagado = true
+                AND m.usuario.id = :usuarioId
             """)
-    BigDecimal totalIngresosPagados();
+    BigDecimal totalIngresosPagados(@Param("usuarioId") Long usuarioId);
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
                 FROM Movimiento m
                 WHERE m.tipo = 'EGRESO'
                 AND m.pagado = true
+                AND m.usuario.id = :usuarioId
             """)
-    BigDecimal totalEgresosPagados();
+    BigDecimal totalEgresosPagados(@Param("usuarioId") Long usuarioId);
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
                 FROM Movimiento m
                 WHERE m.tipo = 'EGRESO'
                 AND m.pagado = false
+                AND m.usuario.id = :usuarioId
             """)
-    BigDecimal totalDeudasPendientes();
+    BigDecimal totalDeudasPendientes(@Param("usuarioId") Long usuarioId);
 
     @Query("""
                 SELECT c.nombre AS categoria, COALESCE(SUM(m.monto), 0) AS total
                 FROM Movimiento m
                 JOIN m.categoria c
                 WHERE m.pagado = true
+                AND m.usuario.id = :usuarioId
                 GROUP BY c.nombre
             """)
-    List<ResumenCategoria> totalPorCategoria();
+    List<ResumenCategoria> totalPorCategoria(@Param("usuarioId") Long usuarioId);
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
@@ -59,16 +65,16 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 WHERE m.tipo = :tipo
                 AND m.pagado = true
                 AND m.fecha BETWEEN :inicio AND :fin
+                AND m.usuario.id = :usuarioId
             """)
     BigDecimal totalPorFecha(
             @Param("tipo") TipoMovimiento tipo,
             @Param("inicio") LocalDate inicio,
-            @Param("fin") LocalDate fin
+            @Param("fin") LocalDate fin,
+            @Param("usuarioId") Long usuarioId
     );
 
-    // Filtros
-
-    // AND m.usuario.id = :usuarioId
+    // Filtros con usuario
 
     @Query("""
         SELECT m FROM Movimiento m
@@ -77,6 +83,7 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
         AND (:categoriaId IS NULL OR m.categoria.id = :categoriaId)
         AND (:inicio IS NULL OR m.fecha >= :inicio)
         AND (:fin IS NULL OR m.fecha <= :fin)
+        AND m.usuario.id = :usuarioId
         ORDER BY m.fecha DESC
     """)
     List<Movimiento> filtrarMovimientos(
@@ -84,8 +91,8 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
             @Param("pagado") Boolean pagado,
             @Param("categoriaId") Long categoriaId,
             @Param("inicio") LocalDate inicio,
-            @Param("fin") LocalDate fin
-            // @Param("usuarioId") Long usuarioId
+            @Param("fin") LocalDate fin,
+            @Param("usuarioId") Long usuarioId
     );
 
     // Cambiar estados
@@ -105,4 +112,54 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
         WHERE m.id = :id
     """)
     void marcarComoPendiente(@Param("id") Long id);
+
+    // Resúmenes por día/mes/año
+
+    @Query("""
+        SELECT COALESCE(SUM(m.monto), 0)
+        FROM Movimiento m
+        WHERE m.tipo = :tipo
+        AND m.pagado = true
+        AND YEAR(m.fecha) = :anio
+        AND MONTH(m.fecha) = :mes
+        AND DAY(m.fecha) = :dia
+        AND m.usuario.id = :usuarioId
+    """)
+    BigDecimal totalPorDia(
+            @Param("tipo") TipoMovimiento tipo,
+            @Param("anio") int anio,
+            @Param("mes") int mes,
+            @Param("dia") int dia,
+            @Param("usuarioId") Long usuarioId
+    );
+
+    @Query("""
+        SELECT COALESCE(SUM(m.monto), 0)
+        FROM Movimiento m
+        WHERE m.tipo = :tipo
+        AND m.pagado = true
+        AND YEAR(m.fecha) = :anio
+        AND MONTH(m.fecha) = :mes
+        AND m.usuario.id = :usuarioId
+    """)
+    BigDecimal totalPorMes(
+            @Param("tipo") TipoMovimiento tipo,
+            @Param("anio") int anio,
+            @Param("mes") int mes,
+            @Param("usuarioId") Long usuarioId
+    );
+
+    @Query("""
+        SELECT COALESCE(SUM(m.monto), 0)
+        FROM Movimiento m
+        WHERE m.tipo = :tipo
+        AND m.pagado = true
+        AND YEAR(m.fecha) = :anio
+        AND m.usuario.id = :usuarioId
+    """)
+    BigDecimal totalPorAnio(
+            @Param("tipo") TipoMovimiento tipo,
+            @Param("anio") int anio,
+            @Param("usuarioId") Long usuarioId
+    );
 }
