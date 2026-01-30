@@ -4,6 +4,7 @@ import com.matech.finanzas.dto.CategoriaDTO;
 import com.matech.finanzas.dto.MovimientoDTO;
 import com.matech.finanzas.entity.Categoria;
 import com.matech.finanzas.entity.Movimiento;
+import com.matech.finanzas.entity.Usuario;
 import com.matech.finanzas.repository.CategoriaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,11 +29,7 @@ public class MovimientoMapper {
                 .build();
     }
 
-    public Movimiento toEntity(MovimientoDTO dto) {
-
-        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-                .orElseThrow(() -> new RuntimeException("Categoria No Encontrada"));
-
+    public Movimiento toEntity(MovimientoDTO dto, Categoria categoria, Usuario usuario) {
         return Movimiento.builder()
                 .id(dto.getId())
                 .tipo(dto.getTipo())
@@ -42,6 +39,7 @@ public class MovimientoMapper {
                 .fechaVencimiento(dto.getFechaVencimiento())
                 .pagado(dto.isPagado())
                 .categoria(categoria)
+                .usuario(usuario)
                 .build();
     }
 }

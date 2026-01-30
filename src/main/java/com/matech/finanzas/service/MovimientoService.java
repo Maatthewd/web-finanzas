@@ -1,11 +1,14 @@
 package com.matech.finanzas.service;
 
 import com.matech.finanzas.dto.MovimientoDTO;
+import com.matech.finanzas.entity.Categoria;
 import com.matech.finanzas.entity.Movimiento;
 import com.matech.finanzas.entity.TipoMovimiento;
 import com.matech.finanzas.entity.Usuario;
 import com.matech.finanzas.mapper.MovimientoMapper;
+import com.matech.finanzas.repository.CategoriaRepository;
 import com.matech.finanzas.repository.MovimientoRepository;
+import com.matech.finanzas.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,13 +22,21 @@ public class MovimientoService {
 
     private final MovimientoRepository movimientoRepository;
     private final MovimientoMapper movimientoMapper;
+    private final CategoriaRepository categoriaRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public MovimientoDTO crear(MovimientoDTO dto) {
-        Movimiento mov =  movimientoMapper.toEntity(dto);
+    @Transactional
+    public MovimientoDTO crear(MovimientoDTO dto, Long usuarioId) {
+        // Validar que la categoría existe
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
-        // Usuario temporal para testear
-        mov.setUsuario(Usuario.builder()
-                .id(1L).build());
+        // Obtener usuario autenticado
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Movimiento mov = movimientoMapper.toEntity(dto, categoria, usuario);
+        mov.setUsuario(usuario);
 
         return movimientoMapper.toDTO(movimientoRepository.save(mov));
     }
