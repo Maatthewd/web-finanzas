@@ -9,7 +9,9 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.matech.finanzas.entity.Movimiento;
 import com.matech.finanzas.entity.TipoMovimiento;
+import com.matech.finanzas.entity.Workspace;
 import com.matech.finanzas.repository.MovimientoRepository;
+import com.matech.finanzas.repository.WorkspaceRepository;
 import com.matech.finanzas.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +43,7 @@ import java.util.List;
 public class ExportService {
 
     private final MovimientoRepository movimientoRepository;
+    private final WorkspaceRepository workspaceRepository;
 
     /**
      * Exporta movimientos a Excel
@@ -54,8 +57,10 @@ public class ExportService {
 
         Long usuarioId = SecurityUtils.getCurrentUserId();
 
+        Workspace workspace = workspaceRepository.findById(usuarioId).orElse(null);
+
         List<Movimiento> movimientos = movimientoRepository.filtrarMovimientos(
-                tipo, pagado, categoriaId, inicio, fin, usuarioId);
+                tipo, pagado, categoriaId, inicio, fin, usuarioId, workspace.getId());
 
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -178,8 +183,10 @@ public class ExportService {
 
         Long usuarioId = SecurityUtils.getCurrentUserId();
 
+        Workspace workspace = workspaceRepository.findById(usuarioId).orElse(null);
+
         List<Movimiento> movimientos = movimientoRepository.filtrarMovimientos(
-                tipo, pagado, categoriaId, inicio, fin, usuarioId);
+                tipo, pagado, categoriaId, inicio, fin, usuarioId, workspace.getId());
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PdfWriter writer = new PdfWriter(out);

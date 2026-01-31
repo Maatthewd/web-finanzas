@@ -26,6 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final CategoriaService categoriaService;
+    private final WorkspaceService workspaceService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -48,13 +49,20 @@ public class AuthService {
         usuario = usuarioRepository.save(usuario);
         log.info("Usuario creado con ID: {}", usuario.getId());
 
-        // Crear categorías predeterminadas para el usuario
+        // Crear workspace predeterminado
         try {
-            categoriaService.crearCategoriasPredeterminadasParaUsuario(usuario);
-            log.info("Categorías predeterminadas creadas para usuario: {}", usuario.getEmail());
+            workspaceService.crearWorkspacesPredeterminados(usuario);
+            log.info("Workspace predeterminado creado para usuario: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error al crear workspace predeterminado: {}", e.getMessage());
+        }
+
+        // Crear categorías predeterminadas con subcategorías
+        try {
+            categoriaService.crearCategoriasConSubcategoriasPredeterminadas(usuario);
+            log.info("Categorías con subcategorías creadas para usuario: {}", usuario.getEmail());
         } catch (Exception e) {
             log.error("Error al crear categorías predeterminadas: {}", e.getMessage());
-            // No falla el registro si hay error con categorías
         }
 
         // Generar token JWT

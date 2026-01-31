@@ -32,4 +32,11 @@ public class MovimientoDTO {
     
     @NotNull(message = "La categoría es obligatoria")
     private Long categoriaId;
+
+    @NotNull(message = "El workspace es obligatorio")
+    private Long workspaceId;
+
+    // Campos adicionales para visualización
+    private String categoriaNombre;
+    private String workspaceNombre;
 }

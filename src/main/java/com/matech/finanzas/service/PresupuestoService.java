@@ -1,17 +1,11 @@
 package com.matech.finanzas.service;
 
 import com.matech.finanzas.dto.PresupuestoDTO;
-import com.matech.finanzas.entity.Categoria;
-import com.matech.finanzas.entity.Presupuesto;
-import com.matech.finanzas.entity.TipoMovimiento;
-import com.matech.finanzas.entity.Usuario;
+import com.matech.finanzas.entity.*;
 import com.matech.finanzas.exception.ResourceNotFoundException;
 import com.matech.finanzas.exception.ValidationException;
 import com.matech.finanzas.mapper.PresupuestoMapper;
-import com.matech.finanzas.repository.CategoriaRepository;
-import com.matech.finanzas.repository.MovimientoRepository;
-import com.matech.finanzas.repository.PresupuestoRepository;
-import com.matech.finanzas.repository.UsuarioRepository;
+import com.matech.finanzas.repository.*;
 import com.matech.finanzas.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +26,7 @@ public class PresupuestoService {
     private final UsuarioRepository usuarioRepository;
     private final CategoriaRepository categoriaRepository;
     private final MovimientoRepository movimientoRepository;
+    private final WorkspaceRepository workspaceRepository;
     private final PresupuestoMapper presupuestoMapper;
     private final NotificacionService notificacionService;
 
@@ -155,13 +150,17 @@ public class PresupuestoService {
         // Calcular el gasto total del mes
         BigDecimal montoGastado;
 
+        Workspace workspace = workspaceRepository.findById(usuarioId).orElse(null);
+        Long workspaceId = workspace.getId();
+
         if (presupuesto.getCategoria() != null) {
             // Presupuesto por categoría
             montoGastado = movimientoRepository.totalPorMes(
                     TipoMovimiento.EGRESO,
                     presupuesto.getAnio(),
                     presupuesto.getMes(),
-                    usuarioId
+                    usuarioId,
+                    workspaceId
             );
         } else {
             // Presupuesto general
@@ -169,7 +168,8 @@ public class PresupuestoService {
                     TipoMovimiento.EGRESO,
                     presupuesto.getAnio(),
                     presupuesto.getMes(),
-                    usuarioId
+                    usuarioId,
+                    workspaceId
             );
         }
 

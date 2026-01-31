@@ -1,10 +1,10 @@
 package com.matech.finanzas.mapper;
 
-import com.matech.finanzas.dto.CategoriaDTO;
 import com.matech.finanzas.dto.MovimientoDTO;
 import com.matech.finanzas.entity.Categoria;
 import com.matech.finanzas.entity.Movimiento;
 import com.matech.finanzas.entity.Usuario;
+import com.matech.finanzas.entity.Workspace;
 import com.matech.finanzas.repository.CategoriaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,8 +14,10 @@ import org.springframework.stereotype.Component;
 public class MovimientoMapper {
     private final CategoriaRepository categoriaRepository;
 
-
     public MovimientoDTO toDTO(Movimiento mov) {
+        if (mov == null) {
+            return null;
+        }
 
         return MovimientoDTO.builder()
                 .id(mov.getId())
@@ -26,10 +28,18 @@ public class MovimientoMapper {
                 .fechaVencimiento(mov.getFechaVencimiento())
                 .pagado(mov.isPagado())
                 .categoriaId(mov.getCategoria().getId())
+                .categoriaNombre(mov.getCategoria().getNombre())
+                .workspaceId(mov.getWorkspace() != null ? mov.getWorkspace().getId() : null)
+                .workspaceNombre(mov.getWorkspace() != null ? mov.getWorkspace().getNombre() : null)
                 .build();
     }
 
-    public Movimiento toEntity(MovimientoDTO dto, Categoria categoria, Usuario usuario) {
+    public Movimiento toEntity(MovimientoDTO dto, Categoria categoria,
+                               Usuario usuario, Workspace workspace) {
+        if (dto == null) {
+            return null;
+        }
+
         return Movimiento.builder()
                 .id(dto.getId())
                 .tipo(dto.getTipo())
@@ -40,6 +50,7 @@ public class MovimientoMapper {
                 .pagado(dto.isPagado())
                 .categoria(categoria)
                 .usuario(usuario)
+                .workspace(workspace)
                 .build();
     }
 }
