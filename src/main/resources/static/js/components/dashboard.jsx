@@ -3,10 +3,10 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
     const { resumen, movimientos, categorias, presupuestos } = data;
 
     useEffect(() => {
-        if (resumen && categorias.length > 0) {
+        if (resumen && resumen.categorias && resumen.categorias.length > 0) {
             createCharts();
         }
-    }, [resumen, categorias]);
+    }, [resumen]);
 
     const createCharts = () => {
         // Income vs Expenses Chart
@@ -20,7 +20,7 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                 data: {
                     labels: ['Ingresos', 'Egresos'],
                     datasets: [{
-                        data: [resumen.ingresos, resumen.egresos],
+                        data: [resumen.ingresos || 0, resumen.egresos || 0],
                         backgroundColor: ['#10b981', '#ef4444'],
                         borderWidth: 0
                     }]
@@ -38,17 +38,17 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
 
         // Categories Chart
         const ctx2 = document.getElementById('categoriesChart');
-        if (ctx2 && categorias.length > 0) {
+        if (ctx2 && resumen.categorias && resumen.categorias.length > 0) {
             const chart2 = Chart.getChart(ctx2);
             if (chart2) chart2.destroy();
 
             new Chart(ctx2, {
                 type: 'bar',
                 data: {
-                    labels: categorias.map(c => c.categoria),
+                    labels: resumen.categorias.map(c => c.categoria),
                     datasets: [{
                         label: 'Monto',
-                        data: categorias.map(c => c.total),
+                        data: resumen.categorias.map(c => c.total),
                         backgroundColor: '#0ea5e9',
                         borderRadius: 8
                     }]
@@ -69,6 +69,9 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
             });
         }
     };
+
+    const movimientosList = Array.isArray(movimientos) ? movimientos : [];
+    const presupuestosList = Array.isArray(presupuestos) ? presupuestos : [];
 
     return (
         <div className="space-y-6">
@@ -93,7 +96,7 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-green-100 text-sm font-medium">Ingresos</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.ingresos)}</p>
+                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.ingresos || 0)}</p>
                         </div>
                         <div className="bg-white bg-opacity-30 rounded-full p-3">
                             <Icons.TrendUp />
@@ -105,7 +108,7 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-red-100 text-sm font-medium">Egresos</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.egresos)}</p>
+                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.egresos || 0)}</p>
                         </div>
                         <div className="bg-white bg-opacity-30 rounded-full p-3">
                             <Icons.TrendDown />
@@ -117,7 +120,7 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-blue-100 text-sm font-medium">Balance</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.balance)}</p>
+                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.balance || 0)}</p>
                         </div>
                         <div className="bg-white bg-opacity-30 rounded-full p-3">
                             <Icons.Dashboard />
@@ -129,7 +132,7 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-orange-100 text-sm font-medium">Deudas</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.deudas)}</p>
+                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.deudas || 0)}</p>
                         </div>
                         <div className="bg-white bg-opacity-30 rounded-full p-3">
                             <Icons.Notifications />
@@ -159,58 +162,64 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                         onClick={onRefresh}
                         className="text-sm text-sky-600 hover:text-sky-700 font-medium"
                     >
-                        Ver todos
+                        Actualizar
                     </button>
                 </div>
                 <div className="space-y-3">
-                    {movimientos.slice(0, 5).map((mov) => (
-                        <div key={mov.id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
-                            <div className="flex items-center space-x-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                    mov.tipo === 'INGRESO' ? 'bg-green-100' : 'bg-red-100'
-                                }`}>
-                                    {mov.tipo === 'INGRESO' ? (
-                                        <Icons.TrendUp className="text-green-600" />
-                                    ) : (
-                                        <Icons.TrendDown className="text-red-600" />
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="font-medium text-gray-900">{mov.descripcion}</p>
-                                    <div className="flex items-center space-x-2 mt-1">
-                                        <p className="text-sm text-gray-500">{formatDate(mov.fecha)}</p>
-                                        {mov.workspaceNombre && (
-                                            <>
-                                                <span className="text-gray-300">•</span>
-                                                <span className="text-xs text-gray-400">{mov.workspaceNombre}</span>
-                                            </>
+                    {movimientosList.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <p>No hay movimientos registrados</p>
+                        </div>
+                    ) : (
+                        movimientosList.slice(0, 5).map((mov) => (
+                            <div key={mov.id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                <div className="flex items-center space-x-4">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                        mov.tipo === 'INGRESO' ? 'bg-green-100' : 'bg-red-100'
+                                    }`}>
+                                        {mov.tipo === 'INGRESO' ? (
+                                            <Icons.TrendUp className="text-green-600" />
+                                        ) : (
+                                            <Icons.TrendDown className="text-red-600" />
                                         )}
                                     </div>
+                                    <div>
+                                        <p className="font-medium text-gray-900">{mov.descripcion}</p>
+                                        <div className="flex items-center space-x-2 mt-1">
+                                            <p className="text-sm text-gray-500">{formatDate(mov.fecha)}</p>
+                                            {mov.workspaceNombre && (
+                                                <>
+                                                    <span className="text-gray-300">•</span>
+                                                    <span className="text-xs text-gray-400">{mov.workspaceNombre}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`font-semibold ${
+                                        mov.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                        {mov.tipo === 'INGRESO' ? '+' : '-'} {formatCurrency(mov.monto)}
+                                    </p>
+                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                        mov.pagado ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                        {mov.pagado ? 'Pagado' : 'Pendiente'}
+                                    </span>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className={`font-semibold ${
-                                    mov.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                    {mov.tipo === 'INGRESO' ? '+' : '-'} {formatCurrency(mov.monto)}
-                                </p>
-                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                    mov.pagado ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                    {mov.pagado ? 'Pagado' : 'Pendiente'}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
             {/* Budgets Summary */}
-            {presupuestos.length > 0 && (
+            {presupuestosList.length > 0 && (
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Presupuestos del Mes</h3>
                     <div className="space-y-4">
-                        {presupuestos.map((presupuesto) => {
+                        {presupuestosList.map((presupuesto) => {
                             const porcentaje = presupuesto.porcentajeUtilizado || 0;
                             const isOver = porcentaje > 100;
                             const isWarning = porcentaje >= (presupuesto.alertaPorcentaje || 80);

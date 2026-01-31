@@ -7,7 +7,13 @@ const App = () => {
     const [currentWorkspace, setCurrentWorkspace] = useState(null);
 
     const [data, setData] = useState({
-        resumen: {},
+        resumen: {
+            ingresos: 0,
+            egresos: 0,
+            balance: 0,
+            deudas: 0,
+            categorias: []
+        },
         movimientos: [],
         categorias: [],
         presupuestos: [],
@@ -20,75 +26,138 @@ const App = () => {
         if (token) {
             setIsAuthenticated(true);
             loadAllData();
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const loadAllData = async () => {
-        const [
-            resumen,
-            movimientos,
-            categorias,
-            presupuestos,
-            notificaciones,
-            workspaces
-        ] = await Promise.all([
-            api.get('/dashboard/resumen'),
-            api.get('/movimientos'),
-            api.get('/categorias'),
-            api.get('/presupuestos'),
-            api.get('/notificaciones'),
-            api.get('/workspaces')
-        ]);
+        try {
+            // Primero cargar workspaces para saber si filtrar o no
+            const workspaces = await api.get('/workspaces');
 
-        setData({ resumen, movimientos, categorias, presupuestos, notificaciones, workspaces });
+            // Determinar workspace actual
+            let workspace = currentWorkspace;
+            if (!workspace && workspaces && workspaces.length > 0) {
+                workspace = workspaces.find(w => w.esPrincipal) || workspaces[0];
+                setCurrentWorkspace(workspace);
+            }
 
-        const principal = workspaces.find(w => w.esPrincipal);
-        setCurrentWorkspace(principal || null);
-    };
+            const workspaceParam = workspace ? `?workspaceId=${workspace.id}` : '';
 
-    const movimientosFiltrados = currentWorkspace
-        ? data.movimientos.filter(m => m.workspaceId === currentWorkspace.id)
-        : data.movimientos;
+            const [
+                resumen,
+                movimientos,
+                categorias,
+                presupuestos,
+                notificaciones
+            ] = await Promise.all([
+                api.get(`/dashboard/resumen${workspaceParam}`).catch(() => ({
+                    ingresos: 0,
+                    egresos: 0,
+                    balance: 0,
+                    deudas: 0,
+                    categorias: []
+                })),
+                api.get(`/movimientos${workspaceParam}`).catch(() => ({ content: [] })),
+                api.get('/categorias').catch(() => []),
+                api.get('/presupuestos').catch(() => []),
+                api.get('/notificaciones').catch(() => [])
+            ]);
 
-    const presupuestosFiltrados = currentWorkspace
-        ? data.presupuestos.filter(p => p.workspaceId === currentWorkspace.id)
-        : data.presupuestos;
-
-    const renderView = () => {
-        switch (activeView) {
-            case 'dashboard':
-                return <Dashboard data={{ ...data, movimientos: movimientosFiltrados }} onRefresh={loadAllData} />;
-            case 'movements':
-                return <MovementsList movimientos={movimientosFiltrados} categorias={data.categorias} workspaces={data.workspaces} currentWorkspace={currentWorkspace} onUpdate={loadAllData} />;
-            case 'budgets':
-                return <BudgetsList presupuestos={presupuestosFiltrados} categorias={data.categorias} onUpdate={loadAllData} />;
-            case 'notifications':
-                return <NotificationsCenter notificaciones={data.notificaciones} onUpdate={loadAllData} />;
-            case 'reports':
-                return <Reports />;
-            case 'settings':
-                return <Settings workspaces={data.workspaces} categorias={data.categorias} onUpdate={loadAllData} />;
-            default:
-                return <Dashboard data={data} onRefresh={loadAllData} />;
+            setData({
+                resumen: resumen || { ingresos: 0, egresos: 0, balance: 0, deudas: 0, categorias: [] },
+                movimientos: movimientos.content || movimientos || [],
+                categorias: categorias || [],
+                presupuestos: presupuestos || [],
+                notificaciones: notificaciones || [],
+                workspaces: workspaces || []
+            });
+        } catch (error) {
+            console.error('Error al cargar datos:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) return <div className="p-10 text-center">Cargando...</div>;
+    const renderView = () => {
+        const props = {
+            data,
+            currentWorkspace,
+            onRefresh: loadAllData,
+            onUpdate: loadAllData
+        };
+
+        switch (activeView) {
+            case 'dashboard':
+                return <Dashboard {...props} />;
+            case 'movements':
+                return <MovementsList
+                    movimientos={data.movimientos}
+                    categorias={data.categorias}
+                    workspaces={data.workspaces}
+                    currentWorkspace={currentWorkspace}
+                    onUpdate={loadAllData}
+                />;
+            case 'budgets':
+                return <BudgetsList
+                    presupuestos={data.presupuestos}
+                    categorias={data.categorias}
+                    onUpdate={loadAllData}
+                />;
+            case 'notifications':
+                return <NotificationsCenter
+                    notificaciones={data.notificaciones}
+                    onUpdate={loadAllData}
+                />;
+            case 'reports':
+                return <Reports />;
+            case 'settings':
+                return <Settings
+                    workspaces={data.workspaces}
+                    categorias={data.categorias}
+                    onUpdate={loadAllData}
+                />;
+            default:
+                return <Dashboard {...props} />;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Cargando...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
-        return <LoginForm onLoginSuccess={() => { setIsAuthenticated(true); loadAllData(); }} />;
+        return <LoginForm onLoginSuccess={() => {
+            setIsAuthenticated(true);
+            setLoading(true);
+            loadAllData();
+        }} />;
     }
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
-            <Sidebar setActiveView={setActiveView} />
+            <Sidebar
+                activeView={activeView}
+                setActiveView={setActiveView}
+            />
 
             <div className="flex-1 p-8 space-y-6">
                 <WorkspaceSelector
                     workspaces={data.workspaces}
                     currentWorkspace={currentWorkspace}
-                    onSelect={setCurrentWorkspace}
+                    onSelect={(ws) => {
+                        setCurrentWorkspace(ws);
+                        setLoading(true);
+                        loadAllData();
+                    }}
                 />
                 {renderView()}
             </div>
