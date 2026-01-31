@@ -34,24 +34,34 @@ const App = () => {
     }, [currentWorkspace]);
 
     const validateAndLoadData = async () => {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            setIsAuthenticated(false);
-            setLoading(false);
-            return;
-        }
-
         try {
-            // Intentar validar el token haciendo una petición simple
-            const testResponse = await api.get('/workspaces');
+            const token = localStorage.getItem('token');
 
-            // Si llegamos aquí, el token es válido
-            setIsAuthenticated(true);
-            await loadAllData();
+            // Si no hay token, ir directamente al login
+            if (!token) {
+                console.log('No hay token - mostrando login');
+                setIsAuthenticated(false);
+                setLoading(false);
+                return;
+            }
+
+            console.log('Token encontrado - validando...');
+
+            // Intentar validar el token haciendo una petición simple
+            try {
+                const testResponse = await api.get('/workspaces');
+
+                // Si llegamos aquí, el token es válido
+                console.log('Token válido - cargando datos');
+                setIsAuthenticated(true);
+                await loadAllData();
+            } catch (validationError) {
+                // Token inválido o expirado
+                console.error('Token inválido:', validationError);
+                handleLogout();
+            }
         } catch (error) {
-            console.error('Token inválido o expirado:', error);
-            // Limpiar localStorage y forzar logout
+            console.error('Error en validación inicial:', error);
             handleLogout();
         } finally {
             setLoading(false);
@@ -59,6 +69,7 @@ const App = () => {
     };
 
     const handleLogout = () => {
+        console.log('Cerrando sesión...');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setIsAuthenticated(false);
@@ -77,6 +88,7 @@ const App = () => {
             workspaces: []
         });
         setCurrentWorkspace(null);
+        setError(null);
     };
 
     const loadAllData = async () => {
@@ -86,7 +98,7 @@ const App = () => {
             // Primero cargar workspaces
             const workspaces = await api.get('/workspaces').catch(err => {
                 console.error('Error cargando workspaces:', err);
-                return [];
+                throw err; // Re-lanzar para manejo superior
             });
 
             // Si no hay workspace seleccionado, seleccionar el principal o el primero
@@ -229,7 +241,8 @@ const App = () => {
     if (!isAuthenticated) {
         return <LoginForm onLoginSuccess={() => {
             setIsAuthenticated(true);
-            loadAllData();
+            setLoading(true);
+            loadAllData().finally(() => setLoading(false));
         }} />;
     }
 
@@ -274,14 +287,13 @@ const App = () => {
 
 // Agregar manejo de errores global
 window.addEventListener('unhandledrejection', function(event) {
-    console.error('Error no manejado:', event.reason);
+    console.error('Error no manejado (Promise):', event.reason);
     event.preventDefault();
 });
 
 // Error boundary básico
 window.addEventListener('error', function(event) {
     console.error('Error en ejecución:', event.error);
-    event.preventDefault();
 });
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
