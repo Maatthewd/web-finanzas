@@ -1,6 +1,10 @@
 // WorkspaceSelector Component
-const WorkspaceSelector = ({ workspaces, currentWorkspace, onSelect }) => {
+const WorkspaceSelector = ({ workspaces = [], currentWorkspace, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
+
+    if (!workspaces || workspaces.length === 0) {
+        return null;
+    }
 
     return (
         <div className="relative">

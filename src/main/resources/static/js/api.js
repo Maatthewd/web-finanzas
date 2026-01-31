@@ -36,6 +36,7 @@ const api = {
 
             if (response.status === 401) {
                 localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.reload();
                 return null;
             }
