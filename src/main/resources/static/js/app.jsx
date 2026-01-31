@@ -27,8 +27,9 @@ const App = () => {
     }, []);
 
     // Efecto para recargar datos cuando cambia el workspace
+    // IMPORTANTE: También se ejecuta cuando currentWorkspace es null (todos)
     useEffect(() => {
-        if (isAuthenticated && currentWorkspace !== null) {
+        if (isAuthenticated) {
             loadAllData();
         }
     }, [currentWorkspace]);
@@ -37,7 +38,6 @@ const App = () => {
         try {
             const token = localStorage.getItem('token');
 
-            // Si no hay token, ir directamente al login
             if (!token) {
                 console.log('No hay token - mostrando login');
                 setIsAuthenticated(false);
@@ -47,16 +47,12 @@ const App = () => {
 
             console.log('Token encontrado - validando...');
 
-            // Intentar validar el token haciendo una petición simple
             try {
                 const testResponse = await api.get('/workspaces');
-
-                // Si llegamos aquí, el token es válido
                 console.log('Token válido - cargando datos');
                 setIsAuthenticated(true);
                 await loadAllData();
             } catch (validationError) {
-                // Token inválido o expirado
                 console.error('Token inválido:', validationError);
                 handleLogout();
             }
@@ -98,17 +94,12 @@ const App = () => {
             // Primero cargar workspaces
             const workspaces = await api.get('/workspaces').catch(err => {
                 console.error('Error cargando workspaces:', err);
-                throw err; // Re-lanzar para manejo superior
+                throw err;
             });
 
-            // Si no hay workspace seleccionado, seleccionar el principal o el primero
-            let workspace = currentWorkspace;
-            if (!workspace && workspaces && workspaces.length > 0) {
-                workspace = workspaces.find(w => w.esPrincipal) || workspaces[0];
-                setCurrentWorkspace(workspace);
-            }
-
-            const workspaceParam = workspace ? `?workspaceId=${workspace.id}` : '';
+            // Construir el parámetro de workspace
+            // Si currentWorkspace es null, NO agregamos el parámetro (mostrará todos)
+            const workspaceParam = currentWorkspace ? `?workspaceId=${currentWorkspace.id}` : '';
 
             // Cargar datos en paralelo con manejo individual de errores
             const [
@@ -128,7 +119,6 @@ const App = () => {
                     return result.value;
                 } else {
                     console.error(`Error en carga ${index}:`, result.reason);
-                    // Valores por defecto según el índice
                     switch(index) {
                         case 0: return { ingresos: 0, egresos: 0, balance: 0, deudas: 0, categorias: [] };
                         case 1: return { content: [] };
@@ -137,7 +127,7 @@ const App = () => {
                 }
             }));
 
-            // Manejar la respuesta de movimientos (puede ser paginada o no)
+            // Manejar la respuesta de movimientos
             let movimientosList = [];
             if (movimientos) {
                 if (Array.isArray(movimientos)) {
@@ -159,7 +149,6 @@ const App = () => {
             console.error('Error al cargar datos:', error);
             setError('Error al cargar los datos. Por favor, intenta nuevamente.');
 
-            // Si el error es de autenticación, hacer logout
             if (error.message && (error.message.includes('401') || error.message.includes('Sesión expirada'))) {
                 handleLogout();
             }
@@ -167,7 +156,6 @@ const App = () => {
     };
 
     const renderView = () => {
-        // Verificar que los datos necesarios estén disponibles antes de renderizar
         if (!data) {
             return (
                 <div className="flex items-center justify-center h-64">
@@ -274,6 +262,7 @@ const App = () => {
                         workspaces={data.workspaces}
                         currentWorkspace={currentWorkspace}
                         onSelect={(ws) => {
+                            // ws puede ser null si se selecciona "Todos"
                             setCurrentWorkspace(ws);
                         }}
                     />
@@ -291,7 +280,6 @@ window.addEventListener('unhandledrejection', function(event) {
     event.preventDefault();
 });
 
-// Error boundary básico
 window.addEventListener('error', function(event) {
     console.error('Error en ejecución:', event.error);
 });

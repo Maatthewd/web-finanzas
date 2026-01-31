@@ -1,18 +1,16 @@
-// CategorySelector Component - Con soporte para categorías jerárquicas
+// CategorySelector Component - Versión mejorada sin restricción de tipo
 const CategorySelector = ({ categories, value, onChange, tipo }) => {
     const [selectedParent, setSelectedParent] = useState('');
 
-    // Filtrar categorías por tipo
-    const filteredCategories = categories.filter(c =>
-        c.tipo === tipo || c.tipo === 'AMBOS'
-    );
+    // NO filtrar categorías por tipo - permitir cualquier combinación
+    const allCategories = categories;
 
     // Obtener solo categorías padre (sin categoriaPadreId)
-    const parentCategories = filteredCategories.filter(c => !c.categoriaPadreId);
+    const parentCategories = allCategories.filter(c => !c.categoriaPadreId);
 
     // Obtener subcategorías del padre seleccionado
     const childCategories = selectedParent
-        ? filteredCategories.filter(c => c.categoriaPadreId === parseInt(selectedParent))
+        ? allCategories.filter(c => c.categoriaPadreId === parseInt(selectedParent))
         : [];
 
     // Efecto para establecer el padre cuando se carga una categoría seleccionada
@@ -32,7 +30,7 @@ const CategorySelector = ({ categories, value, onChange, tipo }) => {
         setSelectedParent(parentId);
 
         // Si la categoría padre no tiene hijos, seleccionarla directamente
-        const hasChildren = filteredCategories.some(c =>
+        const hasChildren = allCategories.some(c =>
             c.categoriaPadreId === parseInt(parentId)
         );
 
@@ -63,7 +61,7 @@ const CategorySelector = ({ categories, value, onChange, tipo }) => {
                     <option value="">Selecciona una categoría</option>
                     {parentCategories.map(cat => (
                         <option key={cat.id} value={cat.id}>
-                            {cat.nombre}
+                            {cat.icono} {cat.nombre} ({cat.tipo})
                         </option>
                     ))}
                 </select>
@@ -84,7 +82,7 @@ const CategorySelector = ({ categories, value, onChange, tipo }) => {
                         <option value="">Selecciona una subcategoría</option>
                         {childCategories.map(cat => (
                             <option key={cat.id} value={cat.id}>
-                                {cat.nombre}
+                                {cat.icono} {cat.nombre} ({cat.tipo})
                             </option>
                         ))}
                     </select>

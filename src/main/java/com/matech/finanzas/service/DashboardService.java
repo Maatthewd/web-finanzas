@@ -20,7 +20,8 @@ public class DashboardService {
     public ResumenDashboardDTO obtenerResumenDashboard(Long workspaceId) {
         Long usuarioId = SecurityUtils.getCurrentUserId();
 
-        // Verificar workspace si se especifica
+        // Si workspaceId es null, mostrar datos de TODOS los workspaces
+        // Si workspaceId tiene valor, verificar que pertenezca al usuario
         if (workspaceId != null) {
             Workspace workspace = workspaceRepository.findById(workspaceId)
                     .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", workspaceId));
@@ -30,6 +31,7 @@ public class DashboardService {
             }
         }
 
+        // Los métodos del repositorio ya manejan workspaceId null correctamente
         return ResumenDashboardDTO.builder()
                 .ingresos(movimientoRepository.totalIngresosPagados(usuarioId, workspaceId))
                 .egresos(movimientoRepository.totalEgresosPagados(usuarioId, workspaceId))

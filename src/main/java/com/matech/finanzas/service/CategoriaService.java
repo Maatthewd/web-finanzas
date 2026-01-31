@@ -145,52 +145,60 @@ public class CategoriaService {
 
     /**
      * Crea las categorías predeterminadas con subcategorías para un nuevo usuario
+     * IMPORTANTE: Solo se ejecuta UNA VEZ al registrar el usuario
      */
     @Transactional
     public void crearCategoriasConSubcategoriasPredeterminadas(Usuario usuario) {
         log.info("Creando categorías con subcategorías para usuario: {}", usuario.getEmail());
 
+        // Verificar si ya tiene categorías predeterminadas
+        List<Categoria> existentes = categoriaRepository.findByUsuarioId(usuario.getId());
+        if (!existentes.isEmpty()) {
+            log.info("El usuario {} ya tiene categorías, omitiendo creación", usuario.getEmail());
+            return;
+        }
+
         // INGRESOS
         Categoria salario = crearCategoriaPadre("Salario", TipoCategoria.INGRESO, usuario, "💰", "#10b981", 1);
-        crearSubcategoria("Sueldo Base", salario, usuario);
-        crearSubcategoria("Bonos", salario, usuario);
-        crearSubcategoria("Horas Extra", salario, usuario);
+        crearSubcategoria("Sueldo Base", salario, usuario, TipoCategoria.INGRESO);
+        crearSubcategoria("Bonos", salario, usuario, TipoCategoria.INGRESO);
+        crearSubcategoria("Horas Extra", salario, usuario, TipoCategoria.INGRESO);
 
         Categoria freelance = crearCategoriaPadre("Freelance", TipoCategoria.INGRESO, usuario, "💼", "#3b82f6", 2);
-        crearSubcategoria("Proyectos", freelance, usuario);
-        crearSubcategoria("Consultoría", freelance, usuario);
+        crearSubcategoria("Proyectos", freelance, usuario, TipoCategoria.INGRESO);
+        crearSubcategoria("Consultoría", freelance, usuario, TipoCategoria.INGRESO);
 
         crearCategoriaPadre("Inversiones", TipoCategoria.INGRESO, usuario, "📈", "#8b5cf6", 3);
         crearCategoriaPadre("Otros Ingresos", TipoCategoria.INGRESO, usuario, "💵", "#06b6d4", 4);
 
         // EGRESOS
         Categoria impuestos = crearCategoriaPadre("Impuestos", TipoCategoria.EGRESO, usuario, "🏛️", "#ef4444", 1);
-        crearSubcategoria("Luz", impuestos, usuario);
-        crearSubcategoria("Gas", impuestos, usuario);
-        crearSubcategoria("Agua", impuestos, usuario);
-        crearSubcategoria("Inmobiliaria", impuestos, usuario);
-        crearSubcategoria("ABL/ARBA", impuestos, usuario);
+        crearSubcategoria("Luz", impuestos, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Gas", impuestos, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Agua", impuestos, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Inmobiliaria", impuestos, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("ABL/ARBA", impuestos, usuario, TipoCategoria.EGRESO);
 
         Categoria servicios = crearCategoriaPadre("Servicios", TipoCategoria.EGRESO, usuario, "📡", "#f59e0b", 2);
-        crearSubcategoria("Internet", servicios, usuario);
-        crearSubcategoria("Cable/Streaming", servicios, usuario);
-        crearSubcategoria("Telefonía", servicios, usuario);
+        crearSubcategoria("Internet", servicios, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Cable/Streaming", servicios, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Telefonía", servicios, usuario, TipoCategoria.EGRESO);
 
         Categoria alimentacion = crearCategoriaPadre("Alimentación", TipoCategoria.EGRESO, usuario, "🛒", "#84cc16", 3);
-        crearSubcategoria("Supermercado", alimentacion, usuario);
-        crearSubcategoria("Restaurantes", alimentacion, usuario);
-        crearSubcategoria("Delivery", alimentacion, usuario);
+        crearSubcategoria("Supermercado", alimentacion, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Restaurantes", alimentacion, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Delivery", alimentacion, usuario, TipoCategoria.EGRESO);
 
         Categoria transporte = crearCategoriaPadre("Transporte", TipoCategoria.EGRESO, usuario, "🚗", "#6366f1", 4);
-        crearSubcategoria("Combustible", transporte, usuario);
-        crearSubcategoria("Mantenimiento", transporte, usuario);
-        crearSubcategoria("Peajes/Estacionamiento", transporte, usuario);
-        crearSubcategoria("Transporte Público", transporte, usuario);
+        crearSubcategoria("Combustible", transporte, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Mantenimiento", transporte, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Peajes/Estacionamiento", transporte, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Transporte Público", transporte, usuario, TipoCategoria.EGRESO);
 
         Categoria salud = crearCategoriaPadre("Salud", TipoCategoria.EGRESO, usuario, "🏥", "#ec4899", 5);
-        crearSubcategoria("Medicamentos", salud, usuario);
-        crearSubcategoria("Consultas Médicas", salud, usuario);
-        crearSubcategoria("Prepaga/Obra Social", salud, usuario);
+        crearSubcategoria("Medicamentos", salud, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Consultas Médicas", salud, usuario, TipoCategoria.EGRESO);
+        crearSubcategoria("Prepaga/Obra Social", salud, usuario, TipoCategoria.EGRESO);
 
         crearCategoriaPadre("Educación", TipoCategoria.EGRESO, usuario, "📚", "#14b8a6", 6);
         crearCategoriaPadre("Entretenimiento", TipoCategoria.EGRESO, usuario, "🎮", "#a855f7", 7);
@@ -218,10 +226,11 @@ public class CategoriaService {
         return categoriaRepository.save(categoria);
     }
 
-    private void crearSubcategoria(String nombre, Categoria padre, Usuario usuario) {
+    // Método con tipo explícito para permitir tipos diferentes al padre
+    private void crearSubcategoria(String nombre, Categoria padre, Usuario usuario, TipoCategoria tipo) {
         Categoria subcategoria = Categoria.builder()
                 .nombre(nombre)
-                .tipo(padre.getTipo())
+                .tipo(tipo)
                 .usuario(usuario)
                 .esPredeterminada(true)
                 .categoriaPadre(padre)

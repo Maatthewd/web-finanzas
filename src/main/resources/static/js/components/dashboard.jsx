@@ -1,4 +1,4 @@
-// Dashboard Component - Completo con soporte para workspaces
+// Dashboard Component - Con charts de tamaño ajustado
 const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
     const { resumen, movimientos, categorias, presupuestos } = data;
 
@@ -27,9 +27,17 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1.5, // Ajustar proporción
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
                         }
                     }
                 }
@@ -55,6 +63,8 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1.5, // Ajustar proporción
                     plugins: {
                         legend: {
                             display: false
@@ -62,7 +72,19 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
                         }
                     }
                 }
@@ -141,16 +163,20 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                 </div>
             </div>
 
-            {/* Charts */}
+            {/* Charts - CON ALTURA LIMITADA */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingresos vs Egresos</h3>
-                    <canvas id="incomeExpenseChart"></canvas>
+                    <div className="h-64"> {/* ALTURA FIJA */}
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Por Categoría</h3>
-                    <canvas id="categoriesChart"></canvas>
+                    <div className="h-64 overflow-y-auto"> {/* ALTURA FIJA CON SCROLL */}
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
                 </div>
             </div>
 
