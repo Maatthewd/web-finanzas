@@ -5,6 +5,7 @@ const App = () => {
     const [loading, setLoading] = useState(true);
     const [activeView, setActiveView] = useState('dashboard');
     const [currentWorkspace, setCurrentWorkspace] = useState(null);
+    const [error, setError] = useState(null);
 
     const [data, setData] = useState({
         resumen: {
@@ -22,13 +23,7 @@ const App = () => {
     });
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            setIsAuthenticated(true);
-            loadAllData();
-        } else {
-            setLoading(false);
-        }
+        validateAndLoadData();
     }, []);
 
     // Efecto para recargar datos cuando cambia el workspace
@@ -38,12 +33,61 @@ const App = () => {
         }
     }, [currentWorkspace]);
 
+    const validateAndLoadData = async () => {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            setIsAuthenticated(false);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // Intentar validar el token haciendo una petición simple
+            const testResponse = await api.get('/workspaces');
+
+            // Si llegamos aquí, el token es válido
+            setIsAuthenticated(true);
+            await loadAllData();
+        } catch (error) {
+            console.error('Token inválido o expirado:', error);
+            // Limpiar localStorage y forzar logout
+            handleLogout();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        setData({
+            resumen: {
+                ingresos: 0,
+                egresos: 0,
+                balance: 0,
+                deudas: 0,
+                categorias: []
+            },
+            movimientos: [],
+            categorias: [],
+            presupuestos: [],
+            notificaciones: [],
+            workspaces: []
+        });
+        setCurrentWorkspace(null);
+    };
+
     const loadAllData = async () => {
         try {
-            setLoading(true);
+            setError(null);
 
             // Primero cargar workspaces
-            const workspaces = await api.get('/workspaces').catch(() => []);
+            const workspaces = await api.get('/workspaces').catch(err => {
+                console.error('Error cargando workspaces:', err);
+                return [];
+            });
 
             // Si no hay workspace seleccionado, seleccionar el principal o el primero
             let workspace = currentWorkspace;
@@ -54,25 +98,32 @@ const App = () => {
 
             const workspaceParam = workspace ? `?workspaceId=${workspace.id}` : '';
 
+            // Cargar datos en paralelo con manejo individual de errores
             const [
                 resumen,
                 movimientos,
                 categorias,
                 presupuestos,
                 notificaciones
-            ] = await Promise.all([
-                api.get(`/dashboard/resumen${workspaceParam}`).catch(() => ({
-                    ingresos: 0,
-                    egresos: 0,
-                    balance: 0,
-                    deudas: 0,
-                    categorias: []
-                })),
-                api.get(`/movimientos${workspaceParam}`).catch(() => ({ content: [] })),
-                api.get('/categorias').catch(() => []),
-                api.get('/presupuestos').catch(() => []),
-                api.get('/notificaciones').catch(() => [])
-            ]);
+            ] = await Promise.allSettled([
+                api.get(`/dashboard/resumen${workspaceParam}`),
+                api.get(`/movimientos${workspaceParam}`),
+                api.get('/categorias'),
+                api.get('/presupuestos'),
+                api.get('/notificaciones')
+            ]).then(results => results.map((result, index) => {
+                if (result.status === 'fulfilled') {
+                    return result.value;
+                } else {
+                    console.error(`Error en carga ${index}:`, result.reason);
+                    // Valores por defecto según el índice
+                    switch(index) {
+                        case 0: return { ingresos: 0, egresos: 0, balance: 0, deudas: 0, categorias: [] };
+                        case 1: return { content: [] };
+                        default: return [];
+                    }
+                }
+            }));
 
             // Manejar la respuesta de movimientos (puede ser paginada o no)
             let movimientosList = [];
@@ -94,13 +145,25 @@ const App = () => {
             });
         } catch (error) {
             console.error('Error al cargar datos:', error);
-            // No mostramos alert aquí para no molestar al usuario
-        } finally {
-            setLoading(false);
+            setError('Error al cargar los datos. Por favor, intenta nuevamente.');
+
+            // Si el error es de autenticación, hacer logout
+            if (error.message && (error.message.includes('401') || error.message.includes('Sesión expirada'))) {
+                handleLogout();
+            }
         }
     };
 
     const renderView = () => {
+        // Verificar que los datos necesarios estén disponibles antes de renderizar
+        if (!data) {
+            return (
+                <div className="flex items-center justify-center h-64">
+                    <p className="text-gray-500">Cargando datos...</p>
+                </div>
+            );
+        }
+
         const props = {
             data,
             currentWorkspace,
@@ -108,38 +171,47 @@ const App = () => {
             onUpdate: loadAllData
         };
 
-        switch (activeView) {
-            case 'dashboard':
-                return <Dashboard {...props} />;
-            case 'movements':
-                return <MovementsList
-                    movimientos={data.movimientos}
-                    categorias={data.categorias}
-                    workspaces={data.workspaces}
-                    currentWorkspace={currentWorkspace}
-                    onUpdate={loadAllData}
-                />;
-            case 'budgets':
-                return <BudgetsList
-                    presupuestos={data.presupuestos}
-                    categorias={data.categorias}
-                    onUpdate={loadAllData}
-                />;
-            case 'notifications':
-                return <NotificationsCenter
-                    notificaciones={data.notificaciones}
-                    onUpdate={loadAllData}
-                />;
-            case 'reports':
-                return <Reports />;
-            case 'settings':
-                return <Settings
-                    workspaces={data.workspaces}
-                    categorias={data.categorias}
-                    onUpdate={loadAllData}
-                />;
-            default:
-                return <Dashboard {...props} />;
+        try {
+            switch (activeView) {
+                case 'dashboard':
+                    return <Dashboard {...props} />;
+                case 'movements':
+                    return <MovementsList
+                        movimientos={data.movimientos || []}
+                        categorias={data.categorias || []}
+                        workspaces={data.workspaces || []}
+                        currentWorkspace={currentWorkspace}
+                        onUpdate={loadAllData}
+                    />;
+                case 'budgets':
+                    return <BudgetsList
+                        presupuestos={data.presupuestos || []}
+                        categorias={data.categorias || []}
+                        onUpdate={loadAllData}
+                    />;
+                case 'notifications':
+                    return <NotificationsCenter
+                        notificaciones={data.notificaciones || []}
+                        onUpdate={loadAllData}
+                    />;
+                case 'reports':
+                    return <Reports />;
+                case 'settings':
+                    return <Settings
+                        workspaces={data.workspaces || []}
+                        categorias={data.categorias || []}
+                        onUpdate={loadAllData}
+                    />;
+                default:
+                    return <Dashboard {...props} />;
+            }
+        } catch (error) {
+            console.error('Error renderizando vista:', error);
+            return (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <p>Error al mostrar esta sección. Por favor, intenta recargar la página.</p>
+                </div>
+            );
         }
     };
 
@@ -166,20 +238,50 @@ const App = () => {
             <Sidebar
                 activeView={activeView}
                 setActiveView={setActiveView}
+                onLogout={handleLogout}
             />
 
             <div className="flex-1 p-8 space-y-6">
-                <WorkspaceSelector
-                    workspaces={data.workspaces}
-                    currentWorkspace={currentWorkspace}
-                    onSelect={(ws) => {
-                        setCurrentWorkspace(ws);
-                    }}
-                />
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                        <div className="flex items-center justify-between">
+                            <span>{error}</span>
+                            <button
+                                onClick={() => setError(null)}
+                                className="text-red-700 hover:text-red-900"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {data.workspaces && data.workspaces.length > 0 && (
+                    <WorkspaceSelector
+                        workspaces={data.workspaces}
+                        currentWorkspace={currentWorkspace}
+                        onSelect={(ws) => {
+                            setCurrentWorkspace(ws);
+                        }}
+                    />
+                )}
+
                 {renderView()}
             </div>
         </div>
     );
 };
+
+// Agregar manejo de errores global
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Error no manejado:', event.reason);
+    event.preventDefault();
+});
+
+// Error boundary básico
+window.addEventListener('error', function(event) {
+    console.error('Error en ejecución:', event.error);
+    event.preventDefault();
+});
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);

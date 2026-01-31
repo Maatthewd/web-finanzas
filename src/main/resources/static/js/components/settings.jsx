@@ -4,12 +4,13 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
     const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [workspaceForm, setWorkspaceForm] = useState({
         nombre: '',
         descripcion: '',
         color: '#0ea5e9',
-        icono: '🏠',
+        icono: '💼',
         activo: true
     });
 
@@ -29,6 +30,9 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
     // Workspace handlers
     const handleWorkspaceSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
         try {
             if (editingItem) {
                 await api.put(`/workspaces/${editingItem.id}`, workspaceForm);
@@ -38,9 +42,11 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
             setShowWorkspaceModal(false);
             setEditingItem(null);
             resetWorkspaceForm();
-            onUpdate();
+            await onUpdate();
         } catch (error) {
             alert('Error: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -60,7 +66,7 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
         if (confirm('¿Estás seguro de eliminar este workspace?')) {
             try {
                 await api.delete(`/workspaces/${id}`);
-                onUpdate();
+                await onUpdate();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
@@ -70,7 +76,7 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
     const handleSetPrincipal = async (id) => {
         try {
             await api.patch(`/workspaces/${id}/principal`);
-            onUpdate();
+            await onUpdate();
         } catch (error) {
             alert('Error: ' + error.message);
         }
@@ -81,7 +87,7 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
             nombre: '',
             descripcion: '',
             color: '#0ea5e9',
-            icono: '🏠',
+            icono: '💼',
             activo: true
         });
     };
@@ -89,6 +95,9 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
     // Category handlers
     const handleCategorySubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
         try {
             const payload = {
                 ...categoryForm,
@@ -103,9 +112,12 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
             setShowCategoryModal(false);
             setEditingItem(null);
             resetCategoryForm();
-            onUpdate();
+            await onUpdate();
+            // NO cambiar de tab - mantener en 'categories'
         } catch (error) {
             alert('Error: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -122,11 +134,24 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
         setShowCategoryModal(true);
     };
 
+    const handleAddSubcategory = (parentCategory) => {
+        setEditingItem(null);
+        setCategoryForm({
+            nombre: '',
+            tipo: parentCategory.tipo,
+            categoriaPadreId: parentCategory.id.toString(),
+            icono: parentCategory.icono || '📋',
+            color: parentCategory.color || '#64748b',
+            orden: 0
+        });
+        setShowCategoryModal(true);
+    };
+
     const handleDeleteCategory = async (id) => {
-        if (confirm('¿Estás seguro de eliminar esta categoría?')) {
+        if (confirm('¿Estás seguro de eliminar esta categoría? Se eliminarán también sus subcategorías.')) {
             try {
                 await api.delete(`/categorias/${id}`);
-                onUpdate();
+                await onUpdate();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
@@ -160,13 +185,12 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
     };
 
     const tabs = [
-        { id: 'profile', label: 'Perfil', icon: '👤' },
-        { id: 'workspaces', label: 'Workspaces', icon: '💼' },
-        { id: 'categories', label: 'Categorías', icon: '🏷️' },
-        { id: 'preferences', label: 'Preferencias', icon: '⚙️' }
+        { id: 'profile', label: 'Perfil' },
+        { id: 'workspaces', label: 'Workspaces' },
+        { id: 'categories', label: 'Categorías' },
+        { id: 'preferences', label: 'Preferencias' }
     ];
 
-    const emojiOptions = ['🏠', '💼', '🏢', '🏭', '🏪', '🏦', '💰', '💳', '📊', '📈', '🎯', '🚀'];
     const colorOptions = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6'];
 
     return (
@@ -181,14 +205,13 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
+                                className={`py-4 border-b-2 transition-colors font-medium ${
                                     activeTab === tab.id
-                                        ? 'border-sky-600 text-sky-600 font-medium'
+                                        ? 'border-sky-600 text-sky-600'
                                         : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                             >
-                                <span>{tab.icon}</span>
-                                <span>{tab.label}</span>
+                                {tab.label}
                             </button>
                         ))}
                     </div>
@@ -237,7 +260,9 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                     }}
                                     className="flex items-center space-x-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
                                 >
-                                    <Icons.Plus />
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
                                     <span>Nuevo Workspace</span>
                                 </button>
                             </div>
@@ -250,27 +275,24 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                         style={{ borderLeftWidth: '4px', borderLeftColor: ws.color }}
                                     >
                                         <div className="flex items-start justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <span className="text-3xl">{ws.icono}</span>
-                                                <div>
-                                                    <h4 className="font-semibold text-gray-900">{ws.nombre}</h4>
-                                                    {ws.descripcion && (
-                                                        <p className="text-sm text-gray-500 mt-1">{ws.descripcion}</p>
-                                                    )}
-                                                    <div className="flex items-center space-x-2 mt-2">
-                                                        {ws.esPrincipal && (
-                                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                                                                Principal
-                                                            </span>
-                                                        )}
-                                                        <span className={`text-xs px-2 py-1 rounded-full ${
-                                                            ws.activo
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : 'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                            {ws.activo ? 'Activo' : 'Inactivo'}
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-gray-900">{ws.nombre}</h4>
+                                                {ws.descripcion && (
+                                                    <p className="text-sm text-gray-500 mt-1">{ws.descripcion}</p>
+                                                )}
+                                                <div className="flex items-center space-x-2 mt-2">
+                                                    {ws.esPrincipal && (
+                                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                                                            Principal
                                                         </span>
-                                                    </div>
+                                                    )}
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                                        ws.activo
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                        {ws.activo ? 'Activo' : 'Inactivo'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -317,7 +339,9 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                     }}
                                     className="flex items-center space-x-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
                                 >
-                                    <Icons.Plus />
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
                                     <span>Nueva Categoría</span>
                                 </button>
                             </div>
@@ -339,7 +363,6 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                                             {isExpanded ? '▼' : '▶'}
                                                         </button>
                                                     )}
-                                                    <span className="text-2xl">{parent.icono}</span>
                                                     <div className="flex-1">
                                                         <div className="flex items-center space-x-2">
                                                             <span className="font-semibold text-gray-900">{parent.nombre}</span>
@@ -362,6 +385,12 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                                 </div>
                                                 <div className="flex space-x-2">
                                                     <button
+                                                        onClick={() => handleAddSubcategory(parent)}
+                                                        className="text-sm px-3 py-1 text-green-600 hover:bg-green-50 rounded"
+                                                    >
+                                                        + Subcategoría
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleEditCategory(parent)}
                                                         className="text-sm px-3 py-1 text-sky-600 hover:bg-sky-50 rounded"
                                                     >
@@ -383,7 +412,6 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                                     {subcats.map(sub => (
                                                         <div key={sub.id} className="flex items-center justify-between p-3 pl-12 hover:bg-gray-50">
                                                             <div className="flex items-center space-x-3">
-                                                                <span className="text-xl">{sub.icono}</span>
                                                                 <span className="text-gray-700">{sub.nombre}</span>
                                                             </div>
                                                             <div className="flex space-x-2">
@@ -455,26 +483,6 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Icono</label>
-                                <div className="grid grid-cols-6 gap-2">
-                                    {emojiOptions.map(emoji => (
-                                        <button
-                                            key={emoji}
-                                            type="button"
-                                            onClick={() => setWorkspaceForm({...workspaceForm, icono: emoji})}
-                                            className={`text-2xl p-2 rounded-lg border-2 transition-colors ${
-                                                workspaceForm.icono === emoji
-                                                    ? 'border-sky-500 bg-sky-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                            }`}
-                                        >
-                                            {emoji}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
                                 <div className="grid grid-cols-8 gap-2">
                                     {colorOptions.map(color => (
@@ -509,9 +517,10 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                             <div className="flex space-x-3 pt-4">
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium"
+                                    disabled={isSubmitting}
+                                    className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium disabled:opacity-50"
                                 >
-                                    {editingItem ? 'Actualizar' : 'Crear'}
+                                    {isSubmitting ? 'Guardando...' : (editingItem ? 'Actualizar' : 'Crear')}
                                 </button>
                                 <button
                                     type="button"
@@ -555,11 +564,17 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                     value={categoryForm.tipo}
                                     onChange={(e) => setCategoryForm({...categoryForm, tipo: e.target.value})}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                                    disabled={!!categoryForm.categoriaPadreId}
                                 >
                                     <option value="INGRESO">Ingreso</option>
                                     <option value="EGRESO">Egreso</option>
                                     <option value="AMBOS">Ambos</option>
                                 </select>
+                                {categoryForm.categoriaPadreId && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        El tipo se hereda de la categoría padre
+                                    </p>
+                                )}
                             </div>
 
                             <div>
@@ -572,7 +587,7 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                                     <option value="">Sin padre (categoría principal)</option>
                                     {parentCategories.filter(c => !editingItem || c.id !== editingItem.id).map(cat => (
                                         <option key={cat.id} value={cat.id}>
-                                            {cat.icono} {cat.nombre}
+                                            {cat.nombre}
                                         </option>
                                     ))}
                                 </select>
@@ -581,9 +596,10 @@ const Settings = ({ workspaces, categorias, onUpdate }) => {
                             <div className="flex space-x-3 pt-4">
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium"
+                                    disabled={isSubmitting}
+                                    className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium disabled:opacity-50"
                                 >
-                                    {editingItem ? 'Actualizar' : 'Crear'}
+                                    {isSubmitting ? 'Guardando...' : (editingItem ? 'Actualizar' : 'Crear')}
                                 </button>
                                 <button
                                     type="button"

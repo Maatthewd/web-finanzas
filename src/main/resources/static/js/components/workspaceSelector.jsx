@@ -6,15 +6,31 @@ const WorkspaceSelector = ({ workspaces = [], currentWorkspace, onSelect }) => {
         return null;
     }
 
+    const getInitials = (name) => {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    };
+
     return (
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center space-x-3 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-                <span className="text-2xl">{currentWorkspace?.icono || '📊'}</span>
+                <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                    style={{ backgroundColor: currentWorkspace?.color || '#0ea5e9' }}
+                >
+                    {currentWorkspace ? getInitials(currentWorkspace.nombre) : 'TD'}
+                </div>
                 <span className="font-medium text-gray-700">{currentWorkspace?.nombre || 'Todos'}</span>
-                <Icons.ChevronDown />
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
             </button>
 
             {isOpen && (
@@ -36,7 +52,9 @@ const WorkspaceSelector = ({ workspaces = [], currentWorkspace, onSelect }) => {
                                         : 'hover:bg-gray-50 text-gray-700'
                                 }`}
                             >
-                                <span className="text-2xl">📊</span>
+                                <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 text-xs font-bold">
+                                    TD
+                                </div>
                                 <div className="flex-1 text-left">
                                     <p className="font-medium">Todos</p>
                                     <p className="text-xs text-gray-500">Ver todos los workspaces</p>
@@ -63,7 +81,12 @@ const WorkspaceSelector = ({ workspaces = [], currentWorkspace, onSelect }) => {
                                             : 'none'
                                     }}
                                 >
-                                    <span className="text-2xl">{ws.icono}</span>
+                                    <div
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                                        style={{ backgroundColor: ws.color }}
+                                    >
+                                        {getInitials(ws.nombre)}
+                                    </div>
                                     <div className="flex-1 text-left">
                                         <p className="font-medium">{ws.nombre}</p>
                                         {ws.descripcion && (

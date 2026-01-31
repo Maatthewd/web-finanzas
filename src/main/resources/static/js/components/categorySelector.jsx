@@ -63,7 +63,7 @@ const CategorySelector = ({ categories, value, onChange, tipo }) => {
                     <option value="">Selecciona una categoría</option>
                     {parentCategories.map(cat => (
                         <option key={cat.id} value={cat.id}>
-                            {cat.icono} {cat.nombre}
+                            {cat.nombre}
                         </option>
                     ))}
                 </select>
@@ -84,7 +84,7 @@ const CategorySelector = ({ categories, value, onChange, tipo }) => {
                         <option value="">Selecciona una subcategoría</option>
                         {childCategories.map(cat => (
                             <option key={cat.id} value={cat.id}>
-                                {cat.icono} {cat.nombre}
+                                {cat.nombre}
                             </option>
                         ))}
                     </select>

@@ -11,11 +11,16 @@ const formatCurrency = (amount) => {
 
 const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('es-AR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    try {
+        return new Date(dateString).toLocaleDateString('es-AR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        console.error('Error formateando fecha:', error);
+        return '-';
+    }
 };
 
 // API Helper
@@ -34,25 +39,50 @@ const api = {
                 headers
             });
 
+            // Si es 401, el token es inválido
             if (response.status === 401) {
+                console.warn('Token inválido o expirado');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.reload();
-                return null;
+
+                // Si no estamos en la página de login, recargar
+                if (window.location.pathname !== '/login') {
+                    window.location.reload();
+                }
+                throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
             }
 
+            // Otros errores HTTP
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Error en la solicitud');
+                let errorMessage = 'Error en la solicitud';
+
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    // Si no puede parsear el error, usar mensaje genérico
+                    errorMessage = `Error ${response.status}: ${response.statusText}`;
+                }
+
+                throw new Error(errorMessage);
             }
 
+            // No content (204)
             if (response.status === 204) {
                 return null;
             }
 
-            return await response.json();
+            // Parsear respuesta JSON
+            try {
+                return await response.json();
+            } catch (e) {
+                console.error('Error parseando JSON:', e);
+                return null;
+            }
         } catch (error) {
             console.error('API Error:', error);
+
+            // Re-lanzar el error para que el componente lo maneje
             throw error;
         }
     },

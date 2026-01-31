@@ -1,4 +1,4 @@
-const Sidebar = ({ activeView, setActiveView }) => {
+const Sidebar = ({ activeView, setActiveView, onLogout }) => {
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: '📊' },
         { id: 'movements', label: 'Movimientos', icon: '💸' },
@@ -7,6 +7,18 @@ const Sidebar = ({ activeView, setActiveView }) => {
         { id: 'reports', label: 'Reportes', icon: '📈' },
         { id: 'settings', label: 'Configuración', icon: '⚙️' }
     ];
+
+    const handleLogout = () => {
+        if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+            if (onLogout) {
+                onLogout();
+            } else {
+                // Fallback si no se pasa la función
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+    };
 
     return (
         <div className="w-64 sidebar-dark text-white flex flex-col">
@@ -28,10 +40,7 @@ const Sidebar = ({ activeView, setActiveView }) => {
 
             <div className="p-4 border-t border-slate-700">
                 <button
-                    onClick={() => {
-                        localStorage.clear();
-                        window.location.reload();
-                    }}
+                    onClick={handleLogout}
                     className="flex items-center space-x-2 text-red-400 hover:text-red-300 transition-colors w-full"
                 >
                     <span>🚪</span>
