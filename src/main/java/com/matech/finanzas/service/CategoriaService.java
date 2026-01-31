@@ -144,72 +144,83 @@ public class CategoriaService {
     }
 
     /**
-     * Crea las categorías predeterminadas con subcategorías para un nuevo usuario
+     * Crea las categorías predeterminadas GLOBALES (sin usuario asignado)
+     * Solo se ejecuta UNA VEZ en toda la aplicación
      */
     @Transactional
-    public void crearCategoriasConSubcategoriasPredeterminadas(Usuario usuario) {
-        log.info("Creando categorías con subcategorías para usuario: {}", usuario.getEmail());
+    public void crearCategoriasPredeterminadasGlobales() {
+        // Verificar si ya existen categorías predeterminadas globales
+        List<Categoria> existentes = categoriaRepository.findByEsPredeterminadaTrue();
+        if (!existentes.isEmpty()) {
+            log.info("Las categorías predeterminadas globales ya existen, omitiendo creación");
+            return;
+        }
+
+        log.info("Creando categorías predeterminadas globales (una sola vez)...");
 
         // INGRESOS
-        Categoria salario = crearCategoriaPadre("Salario", TipoCategoria.INGRESO, usuario, "💰", "#10b981", 1);
-        crearSubcategoria("Sueldo Base", salario, usuario);
-        crearSubcategoria("Bonos", salario, usuario);
-        crearSubcategoria("Horas Extra", salario, usuario);
+        Categoria salario = crearCategoriaPadreGlobal("Salario", TipoCategoria.INGRESO, "💰", "#10b981", 1);
+        crearSubcategoriaGlobal("Sueldo Base", salario, TipoCategoria.INGRESO);
+        crearSubcategoriaGlobal("Bonos", salario, TipoCategoria.INGRESO);
+        crearSubcategoriaGlobal("Horas Extra", salario, TipoCategoria.INGRESO);
 
-        Categoria freelance = crearCategoriaPadre("Freelance", TipoCategoria.INGRESO, usuario, "💼", "#3b82f6", 2);
-        crearSubcategoria("Proyectos", freelance, usuario);
-        crearSubcategoria("Consultoría", freelance, usuario);
+        Categoria freelance = crearCategoriaPadreGlobal("Freelance", TipoCategoria.INGRESO, "💼", "#3b82f6", 2);
+        crearSubcategoriaGlobal("Proyectos", freelance, TipoCategoria.INGRESO);
+        crearSubcategoriaGlobal("Consultoría", freelance, TipoCategoria.INGRESO);
 
-        crearCategoriaPadre("Inversiones", TipoCategoria.INGRESO, usuario, "📈", "#8b5cf6", 3);
-        crearCategoriaPadre("Otros Ingresos", TipoCategoria.INGRESO, usuario, "💵", "#06b6d4", 4);
+        crearCategoriaPadreGlobal("Inversiones", TipoCategoria.INGRESO, "📈", "#8b5cf6", 3);
+        crearCategoriaPadreGlobal("Otros Ingresos", TipoCategoria.INGRESO, "💵", "#06b6d4", 4);
 
         // EGRESOS
-        Categoria impuestos = crearCategoriaPadre("Impuestos", TipoCategoria.EGRESO, usuario, "🏛️", "#ef4444", 1);
-        crearSubcategoria("Luz", impuestos, usuario);
-        crearSubcategoria("Gas", impuestos, usuario);
-        crearSubcategoria("Agua", impuestos, usuario);
-        crearSubcategoria("Inmobiliaria", impuestos, usuario);
-        crearSubcategoria("ABL/ARBA", impuestos, usuario);
+        Categoria impuestos = crearCategoriaPadreGlobal("Impuestos", TipoCategoria.EGRESO, "🏛️", "#ef4444", 1);
+        crearSubcategoriaGlobal("Luz", impuestos, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Gas", impuestos, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Agua", impuestos, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Inmobiliaria", impuestos, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("ABL/ARBA", impuestos, TipoCategoria.EGRESO);
 
-        Categoria servicios = crearCategoriaPadre("Servicios", TipoCategoria.EGRESO, usuario, "📡", "#f59e0b", 2);
-        crearSubcategoria("Internet", servicios, usuario);
-        crearSubcategoria("Cable/Streaming", servicios, usuario);
-        crearSubcategoria("Telefonía", servicios, usuario);
+        Categoria servicios = crearCategoriaPadreGlobal("Servicios", TipoCategoria.EGRESO, "📡", "#f59e0b", 2);
+        crearSubcategoriaGlobal("Internet", servicios, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Cable/Streaming", servicios, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Telefonía", servicios, TipoCategoria.EGRESO);
 
-        Categoria alimentacion = crearCategoriaPadre("Alimentación", TipoCategoria.EGRESO, usuario, "🛒", "#84cc16", 3);
-        crearSubcategoria("Supermercado", alimentacion, usuario);
-        crearSubcategoria("Restaurantes", alimentacion, usuario);
-        crearSubcategoria("Delivery", alimentacion, usuario);
+        Categoria alimentacion = crearCategoriaPadreGlobal("Alimentación", TipoCategoria.EGRESO, "🛒", "#84cc16", 3);
+        crearSubcategoriaGlobal("Supermercado", alimentacion, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Restaurantes", alimentacion, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Delivery", alimentacion, TipoCategoria.EGRESO);
 
-        Categoria transporte = crearCategoriaPadre("Transporte", TipoCategoria.EGRESO, usuario, "🚗", "#6366f1", 4);
-        crearSubcategoria("Combustible", transporte, usuario);
-        crearSubcategoria("Mantenimiento", transporte, usuario);
-        crearSubcategoria("Peajes/Estacionamiento", transporte, usuario);
-        crearSubcategoria("Transporte Público", transporte, usuario);
+        Categoria transporte = crearCategoriaPadreGlobal("Transporte", TipoCategoria.EGRESO, "🚗", "#6366f1", 4);
+        crearSubcategoriaGlobal("Combustible", transporte, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Mantenimiento", transporte, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Peajes/Estacionamiento", transporte, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Transporte Público", transporte, TipoCategoria.EGRESO);
 
-        Categoria salud = crearCategoriaPadre("Salud", TipoCategoria.EGRESO, usuario, "🏥", "#ec4899", 5);
-        crearSubcategoria("Medicamentos", salud, usuario);
-        crearSubcategoria("Consultas Médicas", salud, usuario);
-        crearSubcategoria("Prepaga/Obra Social", salud, usuario);
+        Categoria salud = crearCategoriaPadreGlobal("Salud", TipoCategoria.EGRESO, "🏥", "#ec4899", 5);
+        crearSubcategoriaGlobal("Medicamentos", salud, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Consultas Médicas", salud, TipoCategoria.EGRESO);
+        crearSubcategoriaGlobal("Prepaga/Obra Social", salud, TipoCategoria.EGRESO);
 
-        crearCategoriaPadre("Educación", TipoCategoria.EGRESO, usuario, "📚", "#14b8a6", 6);
-        crearCategoriaPadre("Entretenimiento", TipoCategoria.EGRESO, usuario, "🎮", "#a855f7", 7);
-        crearCategoriaPadre("Ropa", TipoCategoria.EGRESO, usuario, "👔", "#f97316", 8);
-        crearCategoriaPadre("Otros Gastos", TipoCategoria.EGRESO, usuario, "💳", "#64748b", 9);
+        crearCategoriaPadreGlobal("Educación", TipoCategoria.EGRESO, "📚", "#14b8a6", 6);
+        crearCategoriaPadreGlobal("Entretenimiento", TipoCategoria.EGRESO, "🎮", "#a855f7", 7);
+        crearCategoriaPadreGlobal("Ropa", TipoCategoria.EGRESO, "👔", "#f97316", 8);
+        crearCategoriaPadreGlobal("Otros Gastos", TipoCategoria.EGRESO, "💳", "#64748b", 9);
 
         // AMBOS
-        crearCategoriaPadre("Préstamos", TipoCategoria.AMBOS, usuario, "🏦", "#dc2626", 10);
-        crearCategoriaPadre("Transferencias", TipoCategoria.AMBOS, usuario, "💸", "#0891b2", 11);
+        crearCategoriaPadreGlobal("Préstamos", TipoCategoria.AMBOS, "🏦", "#dc2626", 10);
+        crearCategoriaPadreGlobal("Transferencias", TipoCategoria.AMBOS, "💸", "#0891b2", 11);
 
-        log.info("Categorías con subcategorías creadas exitosamente para: {}", usuario.getEmail());
+        log.info("Categorías predeterminadas globales creadas exitosamente");
     }
 
-    private Categoria crearCategoriaPadre(String nombre, TipoCategoria tipo, Usuario usuario,
-                                          String icono, String color, int orden) {
+    /**
+     * Crea una categoría padre GLOBAL (sin usuario - null)
+     */
+    private Categoria crearCategoriaPadreGlobal(String nombre, TipoCategoria tipo,
+                                                String icono, String color, int orden) {
         Categoria categoria = Categoria.builder()
                 .nombre(nombre)
                 .tipo(tipo)
-                .usuario(usuario)
+                .usuario(null)  // SIN USUARIO - GLOBAL
                 .esPredeterminada(true)
                 .icono(icono)
                 .color(color)
@@ -218,11 +229,14 @@ public class CategoriaService {
         return categoriaRepository.save(categoria);
     }
 
-    private void crearSubcategoria(String nombre, Categoria padre, Usuario usuario) {
+    /**
+     * Crea una subcategoría GLOBAL (sin usuario - null)
+     */
+    private void crearSubcategoriaGlobal(String nombre, Categoria padre, TipoCategoria tipo) {
         Categoria subcategoria = Categoria.builder()
                 .nombre(nombre)
-                .tipo(padre.getTipo())
-                .usuario(usuario)
+                .tipo(tipo)
+                .usuario(null)  // SIN USUARIO - GLOBAL
                 .esPredeterminada(true)
                 .categoriaPadre(padre)
                 .icono(padre.getIcono())

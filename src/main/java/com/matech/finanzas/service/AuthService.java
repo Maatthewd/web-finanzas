@@ -49,20 +49,21 @@ public class AuthService {
         usuario = usuarioRepository.save(usuario);
         log.info("Usuario creado con ID: {}", usuario.getId());
 
-        // Crear workspace predeterminado
+        // IMPORTANTE: Crear categorías globales solo si no existen
+        // Esto se ejecuta solo UNA VEZ en toda la aplicación
+        try {
+            categoriaService.crearCategoriasPredeterminadasGlobales();
+            log.info("Categorías globales verificadas/creadas");
+        } catch (Exception e) {
+            log.error("Error al verificar/crear categorías globales: {}", e.getMessage());
+        }
+
+        // Crear workspace predeterminado para el usuario
         try {
             workspaceService.crearWorkspacesPredeterminados(usuario);
             log.info("Workspace predeterminado creado para usuario: {}", usuario.getEmail());
         } catch (Exception e) {
             log.error("Error al crear workspace predeterminado: {}", e.getMessage());
-        }
-
-        // Crear categorías predeterminadas con subcategorías
-        try {
-            categoriaService.crearCategoriasConSubcategoriasPredeterminadas(usuario);
-            log.info("Categorías con subcategorías creadas para usuario: {}", usuario.getEmail());
-        } catch (Exception e) {
-            log.error("Error al crear categorías predeterminadas: {}", e.getMessage());
         }
 
         // Generar token JWT

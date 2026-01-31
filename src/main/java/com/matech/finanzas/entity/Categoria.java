@@ -22,8 +22,9 @@ public class Categoria {
     @Column(nullable = false)
     private TipoCategoria tipo;
 
+    // IMPORTANTE: usuario ahora puede ser NULL para categorías globales
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id")
+    @JoinColumn(name = "usuario_id", nullable = true)  // NULLABLE = TRUE
     private Usuario usuario;
 
     @Column(name = "es_predeterminada", nullable = false)
@@ -62,5 +63,12 @@ public class Categoria {
     public void removerSubcategoria(Categoria subcategoria) {
         subcategorias.remove(subcategoria);
         subcategoria.setCategoriaPadre(null);
+    }
+
+    /**
+     * Verifica si esta categoría es global (compartida entre todos los usuarios)
+     */
+    public boolean esGlobal() {
+        return esPredeterminada && usuario == null;
     }
 }
