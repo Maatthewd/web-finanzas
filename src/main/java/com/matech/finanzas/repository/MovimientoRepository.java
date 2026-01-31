@@ -16,7 +16,10 @@ import java.util.List;
 
 public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
 
-    Page<Movimiento> findByUsuarioId(Long usuarioId, Pageable pageable);
+    Page<Movimiento> findByUsuarioIdOrderByFechaDesc(Long usuarioId, Pageable pageable);
+
+    Page<Movimiento> findByUsuarioIdAndWorkspaceIdOrderByFechaDesc(
+        Long usuarioId, Long workspaceId, Pageable pageable);
 
     List<Movimiento> findByUsuarioIdAndFechaBetween(Long id, LocalDate inicio, LocalDate fin);
 
@@ -28,8 +31,11 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 WHERE m.tipo = 'INGRESO'
                 AND m.pagado = true
                 AND m.usuario.id = :usuarioId
+                AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
             """)
-    BigDecimal totalIngresosPagados(@Param("usuarioId") Long usuarioId);
+    BigDecimal totalIngresosPagados(
+        @Param("usuarioId") Long usuarioId,
+        @Param("workspaceId") Long workspaceId);
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
@@ -37,8 +43,11 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 WHERE m.tipo = 'EGRESO'
                 AND m.pagado = true
                 AND m.usuario.id = :usuarioId
+                AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
             """)
-    BigDecimal totalEgresosPagados(@Param("usuarioId") Long usuarioId);
+    BigDecimal totalEgresosPagados(
+        @Param("usuarioId") Long usuarioId,
+        @Param("workspaceId") Long workspaceId);
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
@@ -46,8 +55,11 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 WHERE m.tipo = 'EGRESO'
                 AND m.pagado = false
                 AND m.usuario.id = :usuarioId
+                AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
             """)
-    BigDecimal totalDeudasPendientes(@Param("usuarioId") Long usuarioId);
+    BigDecimal totalDeudasPendientes(
+        @Param("usuarioId") Long usuarioId,
+        @Param("workspaceId") Long workspaceId);
 
     @Query("""
                 SELECT c.nombre AS categoria, COALESCE(SUM(m.monto), 0) AS total
@@ -55,9 +67,12 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 JOIN m.categoria c
                 WHERE m.pagado = true
                 AND m.usuario.id = :usuarioId
+                AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
                 GROUP BY c.nombre
             """)
-    List<ResumenCategoria> totalPorCategoria(@Param("usuarioId") Long usuarioId);
+    List<ResumenCategoria> totalPorCategoria(
+        @Param("usuarioId") Long usuarioId,
+        @Param("workspaceId") Long workspaceId);
 
     @Query("""
                 SELECT COALESCE(SUM(m.monto), 0)
@@ -66,15 +81,17 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
                 AND m.pagado = true
                 AND m.fecha BETWEEN :inicio AND :fin
                 AND m.usuario.id = :usuarioId
+                AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
             """)
     BigDecimal totalPorFecha(
             @Param("tipo") TipoMovimiento tipo,
             @Param("inicio") LocalDate inicio,
             @Param("fin") LocalDate fin,
-            @Param("usuarioId") Long usuarioId
+            @Param("usuarioId") Long usuarioId,
+            @Param("workspaceId") Long workspaceId
     );
 
-    // Filtros con usuario
+    // Filtros con usuario y workspace
 
     @Query("""
         SELECT m FROM Movimiento m
@@ -84,7 +101,8 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
         AND (:inicio IS NULL OR m.fecha >= :inicio)
         AND (:fin IS NULL OR m.fecha <= :fin)
         AND m.usuario.id = :usuarioId
-        ORDER BY m.fecha DESC
+        AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
+        ORDER BY m.fecha DESC, m.id DESC
     """)
     List<Movimiento> filtrarMovimientos(
             @Param("tipo") TipoMovimiento tipo,
@@ -92,7 +110,8 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
             @Param("categoriaId") Long categoriaId,
             @Param("inicio") LocalDate inicio,
             @Param("fin") LocalDate fin,
-            @Param("usuarioId") Long usuarioId
+            @Param("usuarioId") Long usuarioId,
+            @Param("workspaceId") Long workspaceId
     );
 
     // Cambiar estados
@@ -113,7 +132,7 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
     """)
     void marcarComoPendiente(@Param("id") Long id);
 
-    // Resúmenes por día/mes/año
+    // Resúmenes por día/mes/año con workspace
 
     @Query("""
         SELECT COALESCE(SUM(m.monto), 0)
@@ -124,13 +143,15 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
         AND MONTH(m.fecha) = :mes
         AND DAY(m.fecha) = :dia
         AND m.usuario.id = :usuarioId
+        AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
     """)
     BigDecimal totalPorDia(
             @Param("tipo") TipoMovimiento tipo,
             @Param("anio") int anio,
             @Param("mes") int mes,
             @Param("dia") int dia,
-            @Param("usuarioId") Long usuarioId
+            @Param("usuarioId") Long usuarioId,
+            @Param("workspaceId") Long workspaceId
     );
 
     @Query("""
@@ -141,12 +162,14 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
         AND YEAR(m.fecha) = :anio
         AND MONTH(m.fecha) = :mes
         AND m.usuario.id = :usuarioId
+        AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
     """)
     BigDecimal totalPorMes(
             @Param("tipo") TipoMovimiento tipo,
             @Param("anio") int anio,
             @Param("mes") int mes,
-            @Param("usuarioId") Long usuarioId
+            @Param("usuarioId") Long usuarioId,
+            @Param("workspaceId") Long workspaceId
     );
 
     @Query("""
@@ -156,10 +179,12 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
         AND m.pagado = true
         AND YEAR(m.fecha) = :anio
         AND m.usuario.id = :usuarioId
+        AND (:workspaceId IS NULL OR m.workspace.id = :workspaceId)
     """)
     BigDecimal totalPorAnio(
             @Param("tipo") TipoMovimiento tipo,
             @Param("anio") int anio,
-            @Param("usuarioId") Long usuarioId
+            @Param("usuarioId") Long usuarioId,
+            @Param("workspaceId") Long workspaceId
     );
 }

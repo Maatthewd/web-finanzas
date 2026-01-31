@@ -33,10 +33,22 @@ public class CategoriaController {
         return ResponseEntity.ok(categoriaService.listar());
     }
 
+    @GetMapping("/padre")
+    @Operation(summary = "Listar solo categorías padre (sin padres)")
+    public ResponseEntity<List<CategoriaDTO>> listarCategoriasPadre() {
+        return ResponseEntity.ok(categoriaService.listarCategoriasPadre());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtener categoría por ID")
     public ResponseEntity<CategoriaDTO> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.obtenerPorId(id));
+    }
+
+    @GetMapping("/{id}/subcategorias")
+    @Operation(summary = "Obtener categoría con sus subcategorías")
+    public ResponseEntity<CategoriaDTO> obtenerConSubcategorias(@PathVariable Long id) {
+        return ResponseEntity.ok(categoriaService.obtenerConSubcategorias(id));
     }
 
     @PutMapping("/{id}")

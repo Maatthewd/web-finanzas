@@ -35,12 +35,13 @@ public class MovimientoController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar movimientos con paginación")
+    @Operation(summary = "Listar movimientos con paginación y filtro por workspace")
     public ResponseEntity<Page<MovimientoDTO>> listar(
-            @PageableDefault(size = 20, sort = "fecha", direction = Sort.Direction.DESC) 
+            @RequestParam(required = false) Long workspaceId,
+            @PageableDefault(size = 20, sort = "fecha", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        return ResponseEntity.ok(movimientoService.listar(pageable));
+        return ResponseEntity.ok(movimientoService.listar(workspaceId, pageable));
     }
 
     @GetMapping("/{id}")
@@ -50,16 +51,17 @@ public class MovimientoController {
     }
 
     @GetMapping("/filtrar")
-    @Operation(summary = "Filtrar movimientos por múltiples criterios")
+    @Operation(summary = "Filtrar movimientos por múltiples criterios incluyendo workspace")
     public ResponseEntity<List<MovimientoDTO>> filtrar(
             @RequestParam(required = false) TipoMovimiento tipo,
             @RequestParam(required = false) Boolean pagado,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(required = false) Long workspaceId
     ) {
         return ResponseEntity.ok(
-            movimientoService.filtrar(tipo, pagado, categoriaId, inicio, fin)
+            movimientoService.filtrar(tipo, pagado, categoriaId, inicio, fin, workspaceId)
         );
     }
 
