@@ -19,4 +19,12 @@ public class Categoria {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TipoCategoria tipo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
+    @Column(name = "es_predeterminada", nullable = false)
+    @Builder.Default
+    private boolean esPredeterminada = false;
 }
