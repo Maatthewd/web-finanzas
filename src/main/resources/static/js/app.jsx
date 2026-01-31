@@ -31,12 +31,21 @@ const App = () => {
         }
     }, []);
 
+    // Efecto para recargar datos cuando cambia el workspace
+    useEffect(() => {
+        if (isAuthenticated && currentWorkspace !== null) {
+            loadAllData();
+        }
+    }, [currentWorkspace]);
+
     const loadAllData = async () => {
         try {
-            // Primero cargar workspaces para saber si filtrar o no
-            const workspaces = await api.get('/workspaces');
+            setLoading(true);
 
-            // Determinar workspace actual
+            // Primero cargar workspaces
+            const workspaces = await api.get('/workspaces').catch(() => []);
+
+            // Si no hay workspace seleccionado, seleccionar el principal o el primero
             let workspace = currentWorkspace;
             if (!workspace && workspaces && workspaces.length > 0) {
                 workspace = workspaces.find(w => w.esPrincipal) || workspaces[0];
@@ -65,9 +74,19 @@ const App = () => {
                 api.get('/notificaciones').catch(() => [])
             ]);
 
+            // Manejar la respuesta de movimientos (puede ser paginada o no)
+            let movimientosList = [];
+            if (movimientos) {
+                if (Array.isArray(movimientos)) {
+                    movimientosList = movimientos;
+                } else if (movimientos.content && Array.isArray(movimientos.content)) {
+                    movimientosList = movimientos.content;
+                }
+            }
+
             setData({
                 resumen: resumen || { ingresos: 0, egresos: 0, balance: 0, deudas: 0, categorias: [] },
-                movimientos: movimientos.content || movimientos || [],
+                movimientos: movimientosList,
                 categorias: categorias || [],
                 presupuestos: presupuestos || [],
                 notificaciones: notificaciones || [],
@@ -75,6 +94,7 @@ const App = () => {
             });
         } catch (error) {
             console.error('Error al cargar datos:', error);
+            // No mostramos alert aquí para no molestar al usuario
         } finally {
             setLoading(false);
         }
@@ -137,7 +157,6 @@ const App = () => {
     if (!isAuthenticated) {
         return <LoginForm onLoginSuccess={() => {
             setIsAuthenticated(true);
-            setLoading(true);
             loadAllData();
         }} />;
     }
@@ -155,8 +174,6 @@ const App = () => {
                     currentWorkspace={currentWorkspace}
                     onSelect={(ws) => {
                         setCurrentWorkspace(ws);
-                        setLoading(true);
-                        loadAllData();
                     }}
                 />
                 {renderView()}
