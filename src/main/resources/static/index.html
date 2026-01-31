@@ -1,262 +1,44 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanzApp - Gestión Financiera Personal</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinanzApp</title>
 
     <!-- React -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 
-    <!-- Tailwind CSS -->
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-    <!-- Estilos personalizados -->
-    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body class="bg-gray-50">
     <div id="root"></div>
 
-    <!-- Babel Standalone -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- API -->
+    <script src="./js/api.js"></script>
 
-    <!-- Utilities -->
-    <script src="./js/utils.js"></script>
+    <!-- Componentes base -->
+    <script type="text/babel" src="./js/components/icons.jsx"></script>
+    <script type="text/babel" src="./js/components/sidebar.jsx"></script>
+    <script type="text/babel" src="./js/components/workspaceSelector.jsx"></script>
+    <script type="text/babel" src="./js/components/settings.jsx"></script>
+    <script type="text/babel" src="./js/components/categoryselector.jsx"></script>
 
-    <!-- Icons Component -->
-    <script type="text/babel" src="js/components/icons.jsx"></script>
+    <!-- Views -->
+    <script type="text/babel" src="./js/components/dashboard.jsx"></script>
+    <script type="text/babel" src="./js/components/movements.jsx"></script>
+    <script type="text/babel" src="./js/components/budgets.jsx"></script>
+    <script type="text/babel" src="./js/components/notifications.jsx"></script>
+    <script type="text/babel" src="./js/components/reports.jsx"></script>
 
-    <!-- Main App Component - Inline debido a dependencias de React -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <!-- APP -->
+    <script type="text/babel" src="./js/app.jsx"></script>
 
-        // Login Component
-        const LoginForm = ({ onLoginSuccess }) => {
-            const [isLogin, setIsLogin] = useState(true);
-            const [formData, setFormData] = useState({
-                email: '',
-                password: '',
-                nombre: ''
-            });
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState('');
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                setError('');
-
-                try {
-                    const endpoint = isLogin ? '/auth/login' : '/auth/register';
-                    const payload = isLogin
-                        ? { email: formData.email, password: formData.password }
-                        : formData;
-
-                    const data = await api.post(endpoint, payload);
-
-                    if (data && data.token) {
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('user', JSON.stringify({
-                            id: data.id,
-                            nombre: data.nombre,
-                            email: data.email
-                        }));
-                        onLoginSuccess();
-                    }
-                } catch (err) {
-                    setError(err.message || 'Error en la autenticación');
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="min-h-screen flex items-center justify-center gradient-bg py-12 px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-md w-full space-y-8">
-                        <div className="bg-white rounded-2xl shadow-2xl p-8">
-                            <div>
-                                <h2 className="text-center text-4xl font-extrabold text-gray-900 mb-2">
-                                    💰 FinanzApp
-                                </h2>
-                                <p className="text-center text-sm text-gray-600">
-                                    {isLogin ? 'Inicia sesión en tu cuenta' : 'Crea tu cuenta'}
-                                </p>
-                            </div>
-
-                            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                                {error && (
-                                    <div className="rounded-md bg-red-50 p-4">
-                                        <p className="text-sm text-red-800">{error}</p>
-                                    </div>
-                                )}
-
-                                <div className="space-y-4">
-                                    {!isLogin && (
-                                        <div>
-                                            <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
-                                                Nombre completo
-                                            </label>
-                                            <input
-                                                id="nombre"
-                                                name="nombre"
-                                                type="text"
-                                                required={!isLogin}
-                                                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                                placeholder="Juan Pérez"
-                                                value={formData.nombre}
-                                                onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div>
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                            Email
-                                        </label>
-                                        <input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            required
-                                            className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                            placeholder="tu@email.com"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                            Contraseña
-                                        </label>
-                                        <input
-                                            id="password"
-                                            name="password"
-                                            type="password"
-                                            required
-                                            className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                            placeholder="••••••••"
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        {loading ? 'Procesando...' : (isLogin ? 'Iniciar Sesión' : 'Registrarse')}
-                                    </button>
-                                </div>
-
-                                <div className="text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsLogin(!isLogin);
-                                            setError('');
-                                        }}
-                                        className="text-sm text-sky-600 hover:text-sky-500"
-                                    >
-                                        {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // Main App Component (simplificado - solo estructura básica)
-        const App = () => {
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [loading, setLoading] = useState(true);
-
-            useEffect(() => {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    setIsAuthenticated(true);
-                }
-                setLoading(false);
-            }, []);
-
-            if (loading) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-sky-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Cargando...</p>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (!isAuthenticated) {
-                return <LoginForm onLoginSuccess={() => setIsAuthenticated(true)} />;
-            }
-
-            return (
-                <div className="min-h-screen bg-gray-50">
-                    {/* Sidebar */}
-                    <div className="fixed inset-y-0 left-0 w-64 sidebar-dark shadow-lg">
-                        <div className="h-full flex flex-col">
-                            {/* Logo */}
-                            <div className="p-6 gradient-bg">
-                                <h1 className="text-2xl font-bold text-white">💰 FinanzApp</h1>
-                                <p className="text-sm text-sky-100 mt-1">
-                                    {JSON.parse(localStorage.getItem('user') || '{}').nombre}
-                                </p>
-                            </div>
-
-                            {/* Navigation */}
-                            <nav className="flex-1 p-4 space-y-1">
-                                <div className="text-white p-4 rounded-lg bg-slate-800/50">
-                                    <p className="text-sm">Dashboard</p>
-                                </div>
-                            </nav>
-
-                            {/* Logout */}
-                            <div className="p-4 border-t border-slate-700">
-                                <button
-                                    onClick={() => {
-                                        localStorage.clear();
-                                        window.location.reload();
-                                    }}
-                                    className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
-                                >
-                                    <Icons.Logout />
-                                    <span>Cerrar Sesión</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="ml-64 p-8">
-                        <div className="max-w-7xl mx-auto">
-                            <div className="bg-white rounded-xl shadow-lg p-8">
-                                <h2 className="text-2xl font-bold text-gray-900">Bienvenido a FinanzApp</h2>
-                                <p className="mt-2 text-gray-600">
-                                    Tu aplicación de gestión financiera personal
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // Render App
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
 </body>
 </html>
