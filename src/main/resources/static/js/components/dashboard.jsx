@@ -1,6 +1,10 @@
-// Dashboard Component - Completo con soporte para workspaces
+// Dashboard Component - Diseño oscuro profesional con filtro de mes
 const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
     const { resumen, movimientos, categorias, presupuestos } = data;
+
+    const currentDate = new Date();
+    const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
     useEffect(() => {
         if (resumen && resumen.categorias && resumen.categorias.length > 0) {
@@ -29,7 +33,10 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                color: '#cbd5e1'
+                            }
                         }
                     }
                 }
@@ -49,7 +56,7 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     datasets: [{
                         label: 'Monto',
                         data: resumen.categorias.map(c => c.total),
-                        backgroundColor: '#0ea5e9',
+                        backgroundColor: '#3b82f6',
                         borderRadius: 8
                     }]
                 },
@@ -62,7 +69,21 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: '#334155'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: '#334155'
+                            }
                         }
                     }
                 }
@@ -73,17 +94,22 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
     const movimientosList = Array.isArray(movimientos) ? movimientos : [];
     const presupuestosList = Array.isArray(presupuestos) ? presupuestos : [];
 
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
     return (
         <div className="space-y-6">
             {/* Workspace Info */}
             {currentWorkspace && (
-                <div className="bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+                <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-xl shadow-lg p-6 text-white border border-slate-700">
                     <div className="flex items-center space-x-4">
                         <span className="text-4xl">{currentWorkspace.icono}</span>
                         <div>
                             <h2 className="text-2xl font-bold">{currentWorkspace.nombre}</h2>
                             {currentWorkspace.descripcion && (
-                                <p className="text-sky-100 mt-1">{currentWorkspace.descripcion}</p>
+                                <p className="text-blue-200 mt-1">{currentWorkspace.descripcion}</p>
                             )}
                         </div>
                     </div>
@@ -92,50 +118,60 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                <div className="stat-card rounded-xl p-6 text-white card-dark">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-green-100 text-sm font-medium">Ingresos</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.ingresos || 0)}</p>
+                            <p className="text-gray-400 text-sm font-medium">Ingresos</p>
+                            <p className="text-2xl font-bold mt-1 text-green-400">{formatCurrency(resumen.ingresos || 0)}</p>
                         </div>
-                        <div className="bg-white bg-opacity-30 rounded-full p-3">
-                            <Icons.TrendUp />
+                        <div className="bg-green-500 bg-opacity-20 rounded-full p-3">
+                            <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                <div className="stat-card rounded-xl p-6 text-white card-dark">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-red-100 text-sm font-medium">Egresos</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.egresos || 0)}</p>
+                            <p className="text-gray-400 text-sm font-medium">Egresos</p>
+                            <p className="text-2xl font-bold mt-1 text-red-400">{formatCurrency(resumen.egresos || 0)}</p>
                         </div>
-                        <div className="bg-white bg-opacity-30 rounded-full p-3">
-                            <Icons.TrendDown />
+                        <div className="bg-red-500 bg-opacity-20 rounded-full p-3">
+                            <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                <div className="stat-card rounded-xl p-6 text-white card-dark">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-blue-100 text-sm font-medium">Balance</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.balance || 0)}</p>
+                            <p className="text-gray-400 text-sm font-medium">Balance</p>
+                            <p className={`text-2xl font-bold mt-1 ${(resumen.balance || 0) >= 0 ? 'text-blue-400' : 'text-orange-400'}`}>
+                                {formatCurrency(resumen.balance || 0)}
+                            </p>
                         </div>
-                        <div className="bg-white bg-opacity-30 rounded-full p-3">
-                            <Icons.Dashboard />
+                        <div className={`rounded-full p-3 ${(resumen.balance || 0) >= 0 ? 'bg-blue-500 bg-opacity-20' : 'bg-orange-500 bg-opacity-20'}`}>
+                            <svg className={`w-6 h-6 ${(resumen.balance || 0) >= 0 ? 'text-blue-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                <div className="stat-card rounded-xl p-6 text-white card-dark">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-orange-100 text-sm font-medium">Deudas</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(resumen.deudas || 0)}</p>
+                            <p className="text-gray-400 text-sm font-medium">Deudas</p>
+                            <p className="text-2xl font-bold mt-1 text-orange-400">{formatCurrency(resumen.deudas || 0)}</p>
                         </div>
-                        <div className="bg-white bg-opacity-30 rounded-full p-3">
-                            <Icons.Notifications />
+                        <div className="bg-orange-500 bg-opacity-20 rounded-full p-3">
+                            <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -143,54 +179,58 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingresos vs Egresos</h3>
+                <div className="card-dark rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-4">Ingresos vs Egresos</h3>
                     <canvas id="incomeExpenseChart"></canvas>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Por Categoría</h3>
+                <div className="card-dark rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-4">Por Categoría</h3>
                     <canvas id="categoriesChart"></canvas>
                 </div>
             </div>
 
             {/* Recent Movements */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="card-dark rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Movimientos Recientes</h3>
+                    <h3 className="text-lg font-semibold text-gray-200">Movimientos Recientes</h3>
                     <button
                         onClick={onRefresh}
-                        className="text-sm text-sky-600 hover:text-sky-700 font-medium"
+                        className="text-sm text-blue-400 hover:text-blue-300 font-medium"
                     >
                         Actualizar
                     </button>
                 </div>
                 <div className="space-y-3">
                     {movimientosList.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-400">
                             <p>No hay movimientos registrados</p>
                         </div>
                     ) : (
                         movimientosList.slice(0, 5).map((mov) => (
-                            <div key={mov.id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
+                            <div key={mov.id} className="flex items-center justify-between p-4 hover:bg-slate-700 rounded-lg transition-colors">
                                 <div className="flex items-center space-x-4">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                        mov.tipo === 'INGRESO' ? 'bg-green-100' : 'bg-red-100'
+                                        mov.tipo === 'INGRESO' ? 'bg-green-500 bg-opacity-20' : 'bg-red-500 bg-opacity-20'
                                     }`}>
                                         {mov.tipo === 'INGRESO' ? (
-                                            <Icons.TrendUp className="text-green-600" />
+                                            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
                                         ) : (
-                                            <Icons.TrendDown className="text-red-600" />
+                                            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                            </svg>
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-gray-900">{mov.descripcion}</p>
+                                        <p className="font-medium text-gray-200">{mov.descripcion}</p>
                                         <div className="flex items-center space-x-2 mt-1">
-                                            <p className="text-sm text-gray-500">{formatDate(mov.fecha)}</p>
+                                            <p className="text-sm text-gray-400">{formatDate(mov.fecha)}</p>
                                             {mov.workspaceNombre && (
                                                 <>
-                                                    <span className="text-gray-300">•</span>
-                                                    <span className="text-xs text-gray-400">{mov.workspaceNombre}</span>
+                                                    <span className="text-gray-600">•</span>
+                                                    <span className="text-xs text-gray-500">{mov.workspaceNombre}</span>
                                                 </>
                                             )}
                                         </div>
@@ -198,12 +238,12 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                                 </div>
                                 <div className="text-right">
                                     <p className={`font-semibold ${
-                                        mov.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'
+                                        mov.tipo === 'INGRESO' ? 'text-green-400' : 'text-red-400'
                                     }`}>
                                         {mov.tipo === 'INGRESO' ? '+' : '-'} {formatCurrency(mov.monto)}
                                     </p>
                                     <span className={`text-xs px-2 py-1 rounded-full ${
-                                        mov.pagado ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                        mov.pagado ? 'bg-green-900 bg-opacity-40 text-green-300' : 'bg-yellow-900 bg-opacity-40 text-yellow-300'
                                     }`}>
                                         {mov.pagado ? 'Pagado' : 'Pendiente'}
                                     </span>
@@ -216,8 +256,8 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
 
             {/* Budgets Summary */}
             {presupuestosList.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Presupuestos del Mes</h3>
+                <div className="card-dark rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-4">Presupuestos del Mes</h3>
                     <div className="space-y-4">
                         {presupuestosList.map((presupuesto) => {
                             const porcentaje = presupuesto.porcentajeUtilizado || 0;
@@ -227,24 +267,24 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                             return (
                                 <div key={presupuesto.id} className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">
+                                        <span className="text-sm font-medium text-gray-300">
                                             {presupuesto.nombre}
                                         </span>
                                         <span className={`text-sm font-semibold ${
-                                            isOver ? 'text-red-600' : isWarning ? 'text-orange-600' : 'text-gray-600'
+                                            isOver ? 'text-red-400' : isWarning ? 'text-orange-400' : 'text-gray-300'
                                         }`}>
                                             {porcentaje.toFixed(1)}%
                                         </span>
                                     </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div className="w-full bg-slate-700 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full transition-all ${
-                                                isOver ? 'bg-red-600' : isWarning ? 'bg-orange-500' : 'bg-green-500'
+                                                isOver ? 'bg-red-500' : isWarning ? 'bg-orange-500' : 'bg-green-500'
                                             }`}
                                             style={{ width: `${Math.min(porcentaje, 100)}%` }}
                                         ></div>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <div className="flex items-center justify-between text-xs text-gray-400">
                                         <span>{formatCurrency(presupuesto.montoGastado)} gastado</span>
                                         <span>{formatCurrency(presupuesto.montoLimite)} límite</span>
                                     </div>

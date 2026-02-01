@@ -26,7 +26,6 @@ const App = () => {
         validateAndLoadData();
     }, []);
 
-    // Efecto para recargar datos cuando cambia el workspace
     useEffect(() => {
         if (isAuthenticated && currentWorkspace !== null) {
             loadAllData();
@@ -37,7 +36,6 @@ const App = () => {
         try {
             const token = localStorage.getItem('token');
 
-            // Si no hay token, ir directamente al login
             if (!token) {
                 console.log('No hay token - mostrando login');
                 setIsAuthenticated(false);
@@ -47,16 +45,12 @@ const App = () => {
 
             console.log('Token encontrado - validando...');
 
-            // Intentar validar el token haciendo una petición simple
             try {
                 const testResponse = await api.get('/workspaces');
-
-                // Si llegamos aquí, el token es válido
                 console.log('Token válido - cargando datos');
                 setIsAuthenticated(true);
                 await loadAllData();
             } catch (validationError) {
-                // Token inválido o expirado
                 console.error('Token inválido:', validationError);
                 handleLogout();
             }
@@ -95,13 +89,11 @@ const App = () => {
         try {
             setError(null);
 
-            // Primero cargar workspaces
             const workspaces = await api.get('/workspaces').catch(err => {
                 console.error('Error cargando workspaces:', err);
-                throw err; // Re-lanzar para manejo superior
+                throw err;
             });
 
-            // Si no hay workspace seleccionado, seleccionar el principal o el primero
             let workspace = currentWorkspace;
             if (!workspace && workspaces && workspaces.length > 0) {
                 workspace = workspaces.find(w => w.esPrincipal) || workspaces[0];
@@ -110,7 +102,6 @@ const App = () => {
 
             const workspaceParam = workspace ? `?workspaceId=${workspace.id}` : '';
 
-            // Cargar datos en paralelo con manejo individual de errores
             const [
                 resumen,
                 movimientos,
@@ -128,7 +119,6 @@ const App = () => {
                     return result.value;
                 } else {
                     console.error(`Error en carga ${index}:`, result.reason);
-                    // Valores por defecto según el índice
                     switch(index) {
                         case 0: return { ingresos: 0, egresos: 0, balance: 0, deudas: 0, categorias: [] };
                         case 1: return { content: [] };
@@ -137,7 +127,6 @@ const App = () => {
                 }
             }));
 
-            // Manejar la respuesta de movimientos (puede ser paginada o no)
             let movimientosList = [];
             if (movimientos) {
                 if (Array.isArray(movimientos)) {
@@ -159,7 +148,6 @@ const App = () => {
             console.error('Error al cargar datos:', error);
             setError('Error al cargar los datos. Por favor, intenta nuevamente.');
 
-            // Si el error es de autenticación, hacer logout
             if (error.message && (error.message.includes('401') || error.message.includes('Sesión expirada'))) {
                 handleLogout();
             }
@@ -167,11 +155,10 @@ const App = () => {
     };
 
     const renderView = () => {
-        // Verificar que los datos necesarios estén disponibles antes de renderizar
         if (!data) {
             return (
                 <div className="flex items-center justify-center h-64">
-                    <p className="text-gray-500">Cargando datos...</p>
+                    <p className="text-gray-400">Cargando datos...</p>
                 </div>
             );
         }
@@ -220,7 +207,7 @@ const App = () => {
         } catch (error) {
             console.error('Error renderizando vista:', error);
             return (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <div className="bg-red-900 bg-opacity-20 border border-red-800 text-red-300 px-4 py-3 rounded-lg">
                     <p>Error al mostrar esta sección. Por favor, intenta recargar la página.</p>
                 </div>
             );
@@ -229,10 +216,10 @@ const App = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center" style={{ background: '#0f172a' }}>
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Cargando...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-300">Cargando...</p>
                 </div>
             </div>
         );
@@ -247,7 +234,7 @@ const App = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen flex" style={{ background: '#0f172a' }}>
             <Sidebar
                 activeView={activeView}
                 setActiveView={setActiveView}
@@ -256,12 +243,12 @@ const App = () => {
 
             <div className="flex-1 p-8 space-y-6">
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                    <div className="bg-red-900 bg-opacity-20 border border-red-800 text-red-300 px-4 py-3 rounded-lg mb-4">
                         <div className="flex items-center justify-between">
                             <span>{error}</span>
                             <button
                                 onClick={() => setError(null)}
-                                className="text-red-700 hover:text-red-900"
+                                className="text-red-300 hover:text-red-100"
                             >
                                 ✕
                             </button>
@@ -285,13 +272,11 @@ const App = () => {
     );
 };
 
-// Agregar manejo de errores global
 window.addEventListener('unhandledrejection', function(event) {
     console.error('Error no manejado (Promise):', event.reason);
     event.preventDefault();
 });
 
-// Error boundary básico
 window.addEventListener('error', function(event) {
     console.error('Error en ejecución:', event.error);
 });
