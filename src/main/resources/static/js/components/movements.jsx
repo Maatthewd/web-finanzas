@@ -8,8 +8,8 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
         tipo: '',
         pagado: '',
         categoriaId: '',
-        mes: currentDate.getMonth() + 1,
-        anio: currentDate.getFullYear()
+        mes: '', // Vacío = "Todos"
+        anio: '' // Vacío = "Todos"
     });
 
     const [formData, setFormData] = useState({
@@ -119,13 +119,16 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
             if (!allowedCategoryIds.includes(mov.categoriaId)) return false;
         }
 
-        // Filtro por mes y año
+        // Filtro por mes y año (solo si están seleccionados)
         const movDate = new Date(mov.fecha);
         const movMes = movDate.getMonth() + 1;
         const movAnio = movDate.getFullYear();
 
-        if (filters.mes && movMes !== filters.mes) return false;
-        if (filters.anio && movAnio !== filters.anio) return false;
+        // Si se selecciona mes, filtrar por mes (si no está vacío)
+        if (filters.mes !== '' && movMes !== parseInt(filters.mes)) return false;
+
+        // Si se selecciona año, filtrar por año (si no está vacío)
+        if (filters.anio !== '' && movAnio !== parseInt(filters.anio)) return false;
 
         return true;
     });
@@ -144,12 +147,34 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
 
     totales.balance = totales.ingresos - totales.egresos;
 
+    // Generar texto de período según filtros
+    const getPeriodoTexto = () => {
+        if (filters.mes !== '' && filters.anio !== '') {
+            return `de ${meses[parseInt(filters.mes) - 1]} ${filters.anio}`;
+        } else if (filters.mes !== '' && filters.anio === '') {
+            return `de ${meses[parseInt(filters.mes) - 1]} (Todos los años)`;
+        } else if (filters.mes === '' && filters.anio !== '') {
+            return `del año ${filters.anio}`;
+        } else {
+            return '(Todos)';
+        }
+    };
+
+    const periodoTexto = getPeriodoTexto();
+
     const meses = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
 
-    const anios = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - 2 + i);
+    // Obtener el año más antiguo de los movimientos, o el año actual - 10 por defecto
+    const anioMasAntiguo = movimientos.length > 0
+        ? Math.min(...movimientos.map(m => new Date(m.fecha).getFullYear()))
+        : currentDate.getFullYear() - 10;
+
+    const anioActual = currentDate.getFullYear();
+    const cantidadAnios = anioActual - anioMasAntiguo + 1;
+    const anios = Array.from({ length: cantidadAnios }, (_, i) => anioMasAntiguo + i);
 
     return (
         <div className="space-y-6">
@@ -158,7 +183,7 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                 <div className="card-dark rounded-xl p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Ingresos del Mes</p>
+                            <p className="text-sm text-gray-400">Ingresos {periodoTexto}</p>
                             <p className="text-2xl font-bold text-green-400 mt-1">
                                 {formatCurrency(totales.ingresos)}
                             </p>
@@ -174,7 +199,7 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                 <div className="card-dark rounded-xl p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Egresos del Mes</p>
+                            <p className="text-sm text-gray-400">Egresos {periodoTexto}</p>
                             <p className="text-2xl font-bold text-red-400 mt-1">
                                 {formatCurrency(totales.egresos)}
                             </p>
@@ -190,7 +215,7 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                 <div className="card-dark rounded-xl p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Balance del Mes</p>
+                            <p className="text-sm text-gray-400">Balance {periodoTexto}</p>
                             <p className={`text-2xl font-bold mt-1 ${totales.balance >= 0 ? 'text-blue-400' : 'text-orange-400'}`}>
                                 {formatCurrency(totales.balance)}
                             </p>
@@ -230,9 +255,10 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                         <label className="block text-sm font-medium text-gray-300 mb-2">Mes</label>
                         <select
                             value={filters.mes}
-                            onChange={(e) => setFilters({...filters, mes: parseInt(e.target.value)})}
+                            onChange={(e) => setFilters({...filters, mes: e.target.value})}
                             className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
+                            <option value="">Todos los meses</option>
                             {meses.map((mes, index) => (
                                 <option key={index} value={index + 1}>{mes}</option>
                             ))}
@@ -243,9 +269,10 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                         <label className="block text-sm font-medium text-gray-300 mb-2">Año</label>
                         <select
                             value={filters.anio}
-                            onChange={(e) => setFilters({...filters, anio: parseInt(e.target.value)})}
+                            onChange={(e) => setFilters({...filters, anio: e.target.value})}
                             className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
+                            <option value="">Todos los años</option>
                             {anios.map(anio => (
                                 <option key={anio} value={anio}>{anio}</option>
                             ))}
