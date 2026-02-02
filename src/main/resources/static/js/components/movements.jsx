@@ -1,7 +1,8 @@
-// MovementsList Component - Con filtros por mes y categoría padre
+// MovementsList Component - Con filtros por mes, categoría padre y buscador
 const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentWorkspace }) => {
     const [showModal, setShowModal] = useState(false);
     const [editingMovement, setEditingMovement] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const currentDate = new Date();
     const [filters, setFilters] = useState({
@@ -105,8 +106,8 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
         return [parentId, ...subcats.map(c => c.id)];
     };
 
-    // Filtrar movimientos
-    const filteredMovements = movimientos.filter(mov => {
+    // Filtrar movimientos por filtros (NO por búsqueda) para calcular totales
+    const filteredByFilters = movimientos.filter(mov => {
         // Filtro por tipo
         if (filters.tipo && mov.tipo !== filters.tipo) return false;
 
@@ -120,21 +121,40 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
         }
 
         // Filtro por mes y año (solo si están seleccionados)
-        const movDate = new Date(mov.fecha);
-        const movMes = movDate.getMonth() + 1;
-        const movAnio = movDate.getFullYear();
+        if (filters.mes !== '' || filters.anio !== '') {
+            const movDate = new Date(mov.fecha);
+            const movMes = movDate.getMonth() + 1;
+            const movAnio = movDate.getFullYear();
 
-        // Si se selecciona mes, filtrar por mes (si no está vacío)
-        if (filters.mes !== '' && movMes !== parseInt(filters.mes)) return false;
+            // Si se selecciona mes, filtrar por mes (si no está vacío)
+            if (filters.mes !== '' && movMes !== parseInt(filters.mes)) return false;
 
-        // Si se selecciona año, filtrar por año (si no está vacío)
-        if (filters.anio !== '' && movAnio !== parseInt(filters.anio)) return false;
+            // Si se selecciona año, filtrar por año (si no está vacío)
+            if (filters.anio !== '' && movAnio !== parseInt(filters.anio)) return false;
+        }
 
         return true;
     });
 
-    // Calcular totales del mes filtrado
-    const totales = filteredMovements.reduce((acc, mov) => {
+    // Filtrar movimientos por búsqueda Y filtros para la tabla
+    const filteredMovements = filteredByFilters.filter(mov => {
+        // Filtro por búsqueda
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            const matchesDescription = mov.descripcion.toLowerCase().includes(searchLower);
+            const matchesCategory = mov.categoriaNombre.toLowerCase().includes(searchLower);
+            const matchesWorkspace = mov.workspaceNombre?.toLowerCase().includes(searchLower);
+
+            if (!matchesDescription && !matchesCategory && !matchesWorkspace) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    // Calcular totales SOLO con filtros (sin búsqueda)
+    const totales = filteredByFilters.reduce((acc, mov) => {
         if (mov.pagado) {
             if (mov.tipo === 'INGRESO') {
                 acc.ingresos += mov.monto;
@@ -147,12 +167,19 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
 
     totales.balance = totales.ingresos - totales.egresos;
 
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
     // Generar texto de período según filtros
     const getPeriodoTexto = () => {
         if (filters.mes !== '' && filters.anio !== '') {
-            return `de ${meses[parseInt(filters.mes) - 1]} ${filters.anio}`;
+            const mesIndex = parseInt(filters.mes) - 1;
+            return `de ${meses[mesIndex] || 'Mes'} ${filters.anio}`;
         } else if (filters.mes !== '' && filters.anio === '') {
-            return `de ${meses[parseInt(filters.mes) - 1]} (Todos los años)`;
+            const mesIndex = parseInt(filters.mes) - 1;
+            return `de ${meses[mesIndex] || 'Mes'} (Todos los años)`;
         } else if (filters.mes === '' && filters.anio !== '') {
             return `del año ${filters.anio}`;
         } else {
@@ -161,11 +188,6 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
     };
 
     const periodoTexto = getPeriodoTexto();
-
-    const meses = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
 
     // Obtener el año más antiguo de los movimientos, o el año actual - 10 por defecto
     const anioMasAntiguo = movimientos.length > 0
@@ -245,6 +267,32 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                     <Icons.Plus />
                     <span>Nuevo Movimiento</span>
                 </button>
+            </div>
+
+            {/* Buscador */}
+            <div className="card-dark rounded-xl p-4">
+                <div className="relative">
+                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                        type="text"
+                        placeholder="Buscar por descripción, categoría o workspace..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Filters */}
@@ -408,7 +456,12 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
 
                     {filteredMovements.length === 0 && (
                         <div className="text-center py-12">
-                            <p className="text-gray-400">No hay movimientos para el período seleccionado</p>
+                            <p className="text-gray-400">
+                                {searchTerm
+                                    ? `No se encontraron movimientos que coincidan con "${searchTerm}"`
+                                    : 'No hay movimientos para el período seleccionado'
+                                }
+                            </p>
                         </div>
                     )}
                 </div>
@@ -492,30 +545,18 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
                             />
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        Fecha *
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.fecha}
-                                        onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-                                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
+                                <DateInput
+                                    label="Fecha"
+                                    required
+                                    value={formData.fecha}
+                                    onChange={(value) => setFormData({...formData, fecha: value})}
+                                />
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        Vencimiento
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.fechaVencimiento}
-                                        onChange={(e) => setFormData({...formData, fechaVencimiento: e.target.value})}
-                                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
+                                <DateInput
+                                    label="Vencimiento"
+                                    value={formData.fechaVencimiento}
+                                    onChange={(value) => setFormData({...formData, fechaVencimiento: value})}
+                                />
                             </div>
 
                             <div className="flex items-center">

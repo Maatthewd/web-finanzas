@@ -8,6 +8,8 @@ const Sidebar = ({ activeView, setActiveView, onLogout }) => {
         { id: 'settings', label: 'Configuración', icon: '⚙️' }
     ];
 
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
     const handleLogout = () => {
         if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
             if (onLogout) {
@@ -26,7 +28,33 @@ const Sidebar = ({ activeView, setActiveView, onLogout }) => {
                 <p className="text-xs text-gray-400 mt-1">Gestión Financiera</p>
             </div>
 
-            <nav className="flex-1 p-4 space-y-2">
+            {/* User Info and Logout at top */}
+            <div className="p-4 border-b" style={{ borderColor: '#334155' }}>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {user.nombre ? user.nombre.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-200 truncate">
+                                {user.nombre || 'Usuario'}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate">
+                                {user.email || ''}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center justify-center space-x-2 text-red-400 hover:text-red-300 transition-colors w-full px-3 py-2 rounded-lg hover:bg-slate-800 text-sm"
+                >
+                    <span>🚪</span>
+                    <span>Cerrar sesión</span>
+                </button>
+            </div>
+
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                 {menuItems.map(item => (
                     <SidebarButton
                         key={item.id}
@@ -37,16 +65,6 @@ const Sidebar = ({ activeView, setActiveView, onLogout }) => {
                     />
                 ))}
             </nav>
-
-            <div className="p-4 border-t" style={{ borderColor: '#334155' }}>
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-2 text-red-400 hover:text-red-300 transition-colors w-full px-4 py-2 rounded-lg hover:bg-slate-800"
-                >
-                    <span>🚪</span>
-                    <span>Cerrar sesión</span>
-                </button>
-            </div>
         </div>
     );
 };

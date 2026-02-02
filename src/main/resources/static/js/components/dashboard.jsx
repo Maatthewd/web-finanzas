@@ -1,4 +1,4 @@
-// Dashboard Component - Diseño oscuro profesional con filtro de mes
+// Dashboard Component - Diseño oscuro profesional con gráfico de categorías mejorado
 const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
     const { resumen, movimientos, categorias, presupuestos } = data;
 
@@ -43,33 +43,158 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
             });
         }
 
-        // Categories Chart
+        // Categories Chart - Agrupado por padre con subcategorías stackeadas
         const ctx2 = document.getElementById('categoriesChart');
         if (ctx2 && resumen.categorias && resumen.categorias.length > 0) {
             const chart2 = Chart.getChart(ctx2);
             if (chart2) chart2.destroy();
 
+            // Agrupar por categorías padre
+            const categoryMap = {};
+
+            resumen.categorias.forEach(item => {
+                // Buscar si la categoría tiene padre
+                const cat = categorias.find(c => c.nombre === item.categoria);
+
+                if (cat) {
+                    let parentName = item.categoria;
+                    let subcategoryName = null;
+
+                    // Si tiene padre, obtener el nombre del padre
+                    if (cat.categoriaPadreId) {
+                        const parent = categorias.find(c => c.id === cat.categoriaPadreId);
+                        if (parent) {
+                            parentName = parent.nombre;
+                            subcategoryName = item.categoria;
+                        }
+                    }
+
+                    // Crear entrada para la categoría padre si no existe
+                    if (!categoryMap[parentName]) {
+                        categoryMap[parentName] = {
+                            total: 0,
+                            subcategories: {}
+                        };
+                    }
+
+                    // Agregar el monto
+                    categoryMap[parentName].total += item.total;
+
+                    // Si es una subcategoría, agregar a subcategories
+                    if (subcategoryName) {
+                        categoryMap[parentName].subcategories[subcategoryName] = item.total;
+                    } else {
+                        // Si es la categoría padre directamente
+                        categoryMap[parentName].subcategories[parentName] = item.total;
+                    }
+                }
+            });
+
+            // Preparar datos para el gráfico
+            const parentLabels = Object.keys(categoryMap);
+
+            // Obtener todas las subcategorías únicas
+            const allSubcategories = new Set();
+            Object.values(categoryMap).forEach(parent => {
+                Object.keys(parent.subcategories).forEach(sub => {
+                    allSubcategories.add(sub);
+                });
+            });
+
+            // Colores para subcategorías (paleta de tonos)
+            const colorPalettes = {
+                base: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'],
+                green: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
+                red: ['#ef4444', '#f87171', '#fca5a5', '#fecaca'],
+                purple: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'],
+                orange: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a'],
+                pink: ['#ec4899', '#f472b6', '#f9a8d4', '#fbcfe8']
+            };
+
+            const paletteKeys = Object.keys(colorPalettes);
+
+            // Crear datasets por subcategoría
+            const datasets = [];
+            let colorIndex = 0;
+            let paletteIndex = 0;
+
+            Array.from(allSubcategories).forEach((subcategory, index) => {
+                const data = parentLabels.map(parent => {
+                    return categoryMap[parent].subcategories[subcategory] || 0;
+                });
+
+                // Rotar entre paletas
+                const currentPalette = colorPalettes[paletteKeys[paletteIndex % paletteKeys.length]];
+                const color = currentPalette[colorIndex % currentPalette.length];
+
+                datasets.push({
+                    label: subcategory,
+                    data: data,
+                    backgroundColor: color,
+                    borderRadius: 4,
+                    borderWidth: 1,
+                    borderColor: '#1e293b'
+                });
+
+                colorIndex++;
+                if (colorIndex >= currentPalette.length) {
+                    colorIndex = 0;
+                    paletteIndex++;
+                }
+            });
+
             new Chart(ctx2, {
                 type: 'bar',
                 data: {
-                    labels: resumen.categorias.map(c => c.categoria),
-                    datasets: [{
-                        label: 'Monto',
-                        data: resumen.categorias.map(c => c.total),
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 8
-                    }]
+                    labels: parentLabels,
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#cbd5e1',
+                                boxWidth: 12,
+                                padding: 8,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                // Filtrar para mostrar solo subcategorías con valor > 0
+                                filter: function(tooltipItem) {
+                                    return tooltipItem.parsed.y > 0;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += new Intl.NumberFormat('es-AR', {
+                                        style: 'currency',
+                                        currency: 'ARS'
+                                    }).format(context.parsed.y);
+                                    return label;
+                                },
+                                // Título del tooltip muestra la categoría padre
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                }
+                            }
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
+                        x: {
+                            stacked: true,
                             ticks: {
                                 color: '#cbd5e1'
                             },
@@ -77,9 +202,19 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                                 color: '#334155'
                             }
                         },
-                        x: {
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
                             ticks: {
-                                color: '#cbd5e1'
+                                color: '#cbd5e1',
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('es-AR', {
+                                        style: 'currency',
+                                        currency: 'ARS',
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    }).format(value);
+                                }
                             },
                             grid: {
                                 color: '#334155'
