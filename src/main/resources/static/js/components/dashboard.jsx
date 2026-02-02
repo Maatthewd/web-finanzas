@@ -169,28 +169,26 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                             }
                         },
                         tooltip: {
+                            mode: 'index',
+                            intersect: false,
                             callbacks: {
-                                // Filtrar para mostrar solo subcategorías con valor > 0
-                                filter: function(tooltipItem) {
-                                    return tooltipItem.parsed.y > 0;
+                                title: function(items) {
+                                    return items[0].label; // categoría padre (la torre)
                                 },
                                 label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    label += new Intl.NumberFormat('es-AR', {
-                                        style: 'currency',
-                                        currency: 'ARS'
-                                    }).format(context.parsed.y);
-                                    return label;
-                                },
-                                // Título del tooltip muestra la categoría padre
-                                title: function(tooltipItems) {
-                                    return tooltipItems[0].label;
+                                    const value = context.dataset.data[context.dataIndex];
+
+                                    if (!value || value <= 0) return null;
+
+                                    return `${context.dataset.label}: ` +
+                                        new Intl.NumberFormat('es-AR', {
+                                            style: 'currency',
+                                            currency: 'ARS'
+                                        }).format(value);
                                 }
                             }
                         }
+
                     },
                     scales: {
                         x: {
