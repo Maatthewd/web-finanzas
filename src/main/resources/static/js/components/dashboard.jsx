@@ -101,31 +101,43 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                 });
             });
 
-            // Colores para subcategorías (paleta de tonos)
-            const colorPalettes = {
-                base: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'],
-                green: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
-                red: ['#ef4444', '#f87171', '#fca5a5', '#fecaca'],
-                purple: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'],
-                orange: ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a'],
-                pink: ['#ec4899', '#f472b6', '#f9a8d4', '#fbcfe8']
-            };
+            //
+            const colorPalette = [
+                // Azules (10)
+                '#3b82f6', '#60a5fa', '#2563eb', '#1d4ed8', '#1e40af',
+                '#1e3a8a', '#93c5fd', '#0ea5e9', '#0284c7', '#0369a1',
 
-            const paletteKeys = Object.keys(colorPalettes);
+                // Verdes (10)
+                '#10b981', '#34d399', '#059669', '#047857', '#065f46',
+                '#6ee7b7', '#14b8a6', '#0d9488', '#0f766e', '#115e59',
+
+                // Rojos/Naranjas (10)
+                '#ef4444', '#f87171', '#dc2626', '#b91c1c', '#991b1b',
+                '#f59e0b', '#fbbf24', '#d97706', '#b45309', '#92400e',
+
+                // Púrpuras/Violetas (10)
+                '#8b5cf6', '#a78bfa', '#7c3aed', '#6d28d9', '#5b21b6',
+                '#c4b5fd', '#a855f7', '#9333ea', '#7e22ce', '#6b21a8',
+
+                // Rosas/Magentas (10)
+                '#ec4899', '#f472b6', '#db2777', '#be185d', '#9f1239',
+                '#f9a8d4', '#e879f9', '#d946ef', '#c026d3', '#a21caf',
+
+                // Cianos/Turquesas (10)
+                '#06b6d4', '#22d3ee', '#0891b2', '#0e7490', '#155e75',
+                '#67e8f9', '#14b8a6', '#0d9488', '#0f766e', '#115e59'
+            ];
 
             // Crear datasets por subcategoría
             const datasets = [];
-            let colorIndex = 0;
-            let paletteIndex = 0;
 
             Array.from(allSubcategories).forEach((subcategory, index) => {
                 const data = parentLabels.map(parent => {
                     return categoryMap[parent].subcategories[subcategory] || 0;
                 });
 
-                // Rotar entre paletas
-                const currentPalette = colorPalettes[paletteKeys[paletteIndex % paletteKeys.length]];
-                const color = currentPalette[colorIndex % currentPalette.length];
+                // Usar índice módulo del array de colores para rotar
+                const color = colorPalette[index % colorPalette.length];
 
                 datasets.push({
                     label: subcategory,
@@ -135,12 +147,6 @@ const Dashboard = ({ data, onRefresh, currentWorkspace }) => {
                     borderWidth: 1,
                     borderColor: '#1e293b'
                 });
-
-                colorIndex++;
-                if (colorIndex >= currentPalette.length) {
-                    colorIndex = 0;
-                    paletteIndex++;
-                }
             });
 
             new Chart(ctx2, {

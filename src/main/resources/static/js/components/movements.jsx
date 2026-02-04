@@ -9,8 +9,8 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
         tipo: '',
         pagado: '',
         categoriaId: '',
-        mes: '', // Vacío = "Todos"
-        anio: '' // Vacío = "Todos"
+        mes: '',
+        anio: ''
     });
 
     const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
         monto: '',
         fecha: new Date().toISOString().split('T')[0],
         fechaVencimiento: '',
-        pagado: false,
+        pagado: true,
         categoriaId: '',
         workspaceId: ''
     });
@@ -55,7 +55,7 @@ const MovementsList = ({ movimientos, categorias, workspaces, onUpdate, currentW
             monto: '',
             fecha: new Date().toISOString().split('T')[0],
             fechaVencimiento: '',
-            pagado: false,
+            pagado: true, //
             categoriaId: '',
             workspaceId: currentWorkspace?.id || ''
         });
